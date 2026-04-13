@@ -6,6 +6,9 @@ import com.plating.erp.common.api.ErrorCode;
 import com.plating.erp.common.api.response.CommonResponses;
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.audit.annotation.AuditLog;
+import com.plating.erp.common.security.AuthzCacheService;
+import com.plating.erp.common.security.CredentialRevocationService;
+import com.plating.erp.common.security.RefreshTokenService;
 import com.plating.erp.common.security.SecurityUtils;
 import com.plating.erp.iam.entity.UserEntity;
 import com.plating.erp.iam.service.UserService;
@@ -18,17 +21,28 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/users")
 public class UserController {
     private final UserService userService;
+    private final AuthzCacheService authzCacheService;
+    private final RefreshTokenService refreshTokenService;
+    private final CredentialRevocationService credentialRevocationService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService,
+                          AuthzCacheService authzCacheService,
+                          RefreshTokenService refreshTokenService,
+                          CredentialRevocationService credentialRevocationService) {
         this.userService = userService;
+        this.authzCacheService = authzCacheService;
+        this.refreshTokenService = refreshTokenService;
+        this.credentialRevocationService = credentialRevocationService;
     }
 
     @PostMapping
     @PreAuthorize("@authz.hasPerm('user:add')")
     @AuditLog(module = "用户管理", operateType = "CREATE", bizModule = "user", fieldName = "username")
     public ApiResponse<UserEntity> create(@Valid @RequestBody UserVo.UserCreateReq body) {
+        var me = SecurityUtils.currentUser();
         UserEntity entity = new UserEntity();
-        entity.setTenantId(body.tenantId() == null ? 1L : body.tenantId());
+        long tid = body.tenantId() == null ? 1L : body.tenantId();
+        entity.setTenantId(me.isSystem() ? tid : me.tenantId());
         entity.setUsername(body.username() == null ? "a-00001" : body.username());
         entity.setPasswordHash(body.password() == null ? "123456" : body.password());
         entity.setRealName(body.realName() == null ? "新用户" : body.realName());
@@ -47,14 +61,20 @@ public class UserController {
                                @RequestParam(defaultValue = "20") Integer pageSize,
                                @RequestParam(required = false) Long deptId,
                                @RequestParam(required = false) Integer status) {
-        var page = userService.page(pageNum, pageSize, deptId, status);
+        var me = SecurityUtils.currentUser();
+        var page = userService.page(pageNum, pageSize, deptId, status, me.tenantId(), me.isSystem());
         return ApiResponse.ok(new PageResult<>(page.getRecords(), page.getTotal()));
     }
 
     @GetMapping("/{userId}")
     @PreAuthorize("@authz.hasPerm('user:view')")
     public ApiResponse<UserEntity> detail(@PathVariable Long userId) {
-        return ApiResponse.ok(userService.getById(userId));
+        UserEntity u = userService.getById(userId);
+        if (u == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
+        }
+        assertUserTenant(u);
+        return ApiResponse.ok(u);
     }
 
     @PutMapping("/{userId}")
@@ -65,6 +85,7 @@ public class UserController {
         if (u == null) {
             throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
         }
+        assertUserTenant(u);
         if (body.username() != null) u.setUsername(body.username());
         if (body.realName() != null) u.setRealName(body.realName());
         if (body.avatarUrl() != null) u.setAvatarUrl(body.avatarUrl());
@@ -82,6 +103,7 @@ public class UserController {
         if (u == null) {
             throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
         }
+        assertUserTenant(u);
         u.setStatus(body.status() == null ? 0 : body.status());
         return ApiResponse.ok(userService.save(u));
     }
@@ -90,7 +112,21 @@ public class UserController {
     @PreAuthorize("@authz.hasPerm('user:reset')")
     @AuditLog(module = "用户管理", operateType = "RESET_PASSWORD", bizModule = "user", fieldName = "password_hash")
     public ApiResponse<CommonResponses.ResetPasswordResponse> resetPassword(@PathVariable Long userId) {
-        return ApiResponse.ok(new CommonResponses.ResetPasswordResponse(userId, "Init@123456", true));
+        UserEntity u = userService.getById(userId);
+        if (u == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
+        }
+        assertUserTenant(u);
+        String plain = "Init@123456";
+        u.setPasswordHash(plain);
+        userService.save(u);
+        Long tid = u.getTenantId();
+        if (tid != null) {
+            authzCacheService.evictUser(tid, userId);
+            refreshTokenService.invalidateAllForUser(tid, userId);
+            credentialRevocationService.revokeCredentialsIssuedBeforeNow(tid, userId);
+        }
+        return ApiResponse.ok(new CommonResponses.ResetPasswordResponse(userId, plain, true, tid != null));
     }
 
     @PutMapping("/{userId}/roles")
@@ -110,5 +146,18 @@ public class UserController {
         Long tenantId = SecurityUtils.currentUser().tenantId();
         boolean deleted = userService.unbindRole(tenantId, userId, roleId);
         return ApiResponse.ok(new CommonResponses.DeleteResponse(deleted, roleId));
+    }
+
+    private void assertUserTenant(UserEntity u) {
+        if (u == null) {
+            return;
+        }
+        var me = SecurityUtils.currentUser();
+        if (me.isSystem()) {
+            return;
+        }
+        if (u.getTenantId() == null || !u.getTenantId().equals(me.tenantId())) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权访问该用户");
+        }
     }
 }

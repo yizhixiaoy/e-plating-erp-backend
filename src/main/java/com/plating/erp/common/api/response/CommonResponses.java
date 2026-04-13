@@ -13,7 +13,7 @@ public class CommonResponses {
     public record TokenResponse(String accessToken, Integer expiresIn) {
     }
 
-    public record ResetPasswordResponse(Long userId, String newPassword, boolean needChange) {
+    public record ResetPasswordResponse(Long userId, String newPassword, boolean needChange, boolean sessionsInvalidated) {
     }
 
     public record MenuItemResponse(Long id, String menuName, String path) {

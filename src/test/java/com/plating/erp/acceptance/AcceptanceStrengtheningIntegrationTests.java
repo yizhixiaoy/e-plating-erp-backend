@@ -8,6 +8,7 @@ import com.plating.erp.audit.mapper.BizLogMapper;
 import com.plating.erp.audit.mapper.OperLogMapper;
 import com.plating.erp.common.api.GlobalExceptionHandler;
 import com.plating.erp.common.security.AuthzService;
+import com.plating.erp.common.security.CredentialRevocationService;
 import com.plating.erp.common.security.CurrentUser;
 import com.plating.erp.common.security.JwtAuthenticationFilter;
 import com.plating.erp.common.security.JwtTokenService;
@@ -54,12 +55,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         SecurityConfig.class,
         JwtAuthenticationFilter.class,
         JwtTokenService.class,
+        CredentialRevocationService.class,
         AuthzService.class,
         AuditLogAspect.class,
         GlobalExceptionHandler.class
 })
 @TestPropertySource(properties = {
         "app.jwt.secret=ChangeThisJwtSecretAtLeast32Chars!",
+        "app.jwt.expire-seconds=7200",
         "app.authz.cache-seconds=120"
 })
 class AcceptanceStrengtheningIntegrationTests {

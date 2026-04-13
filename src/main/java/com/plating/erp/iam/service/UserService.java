@@ -31,8 +31,12 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public Page<UserEntity> page(int pageNum, int pageSize, Long deptId, Integer status) {
+    public Page<UserEntity> page(int pageNum, int pageSize, Long deptId, Integer status,
+                                 Long scopeTenantId, boolean allTenants) {
         LambdaQueryWrapper<UserEntity> qw = new LambdaQueryWrapper<>();
+        if (!allTenants && scopeTenantId != null) {
+            qw.eq(UserEntity::getTenantId, scopeTenantId);
+        }
         qw.eq(status != null, UserEntity::getStatus, status)
                 .eq(deptId != null, UserEntity::getDeptId, deptId)
                 .orderByDesc(UserEntity::getId);

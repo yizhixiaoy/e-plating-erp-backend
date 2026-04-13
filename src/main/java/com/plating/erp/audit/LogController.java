@@ -2,9 +2,13 @@ package com.plating.erp.audit;
 
 import com.plating.erp.audit.service.LogService;
 import com.plating.erp.audit.vo.LogVo;
+import com.plating.erp.audit.entity.OperLogEntity;
 import com.plating.erp.common.api.ApiResponse;
+import com.plating.erp.common.api.BizException;
+import com.plating.erp.common.api.ErrorCode;
 import com.plating.erp.common.api.response.CommonResponses;
 import com.plating.erp.common.api.response.PageResult;
+import com.plating.erp.common.security.SecurityUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +27,8 @@ public class LogController {
                                    @RequestParam(defaultValue = "20") Integer pageSize,
                                    @RequestParam(required = false) String moduleTitle,
                                    @RequestParam(required = false) Integer status) {
-        var page = logService.pageOper(pageNum, pageSize, moduleTitle, status);
+        var me = SecurityUtils.currentUser();
+        var page = logService.pageOper(pageNum, pageSize, moduleTitle, status, me.tenantId(), me.isSystem());
         return ApiResponse.ok(new PageResult<>(page.getRecords(), page.getTotal()));
     }
 
@@ -33,14 +38,30 @@ public class LogController {
                                   @RequestParam(defaultValue = "20") Integer pageSize,
                                   @RequestParam(required = false) String bizModule,
                                   @RequestParam(required = false) Long bizId) {
-        var page = logService.pageBiz(pageNum, pageSize, bizModule, bizId);
+        var me = SecurityUtils.currentUser();
+        var page = logService.pageBiz(pageNum, pageSize, bizModule, bizId, me.tenantId(), me.isSystem());
         return ApiResponse.ok(new PageResult<>(page.getRecords(), page.getTotal()));
     }
 
     @GetMapping("/oper/{logId}")
     @PreAuthorize("@authz.hasPerm('log:view')")
     public ApiResponse<?> operLogDetail(@PathVariable Long logId) {
-        return ApiResponse.ok(logService.getOper(logId));
+        OperLogEntity e = logService.getOper(logId);
+        if (e == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "日志不存在");
+        }
+        assertOperLogTenant(e);
+        return ApiResponse.ok(e);
+    }
+
+    private void assertOperLogTenant(OperLogEntity e) {
+        var me = SecurityUtils.currentUser();
+        if (me.isSystem()) {
+            return;
+        }
+        if (e.getTenantId() == null || !e.getTenantId().equals(me.tenantId())) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权查看该日志");
+        }
     }
 
     @PostMapping("/export")

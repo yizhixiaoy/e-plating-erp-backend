@@ -9,6 +9,8 @@ import com.plating.erp.iam.mapper.UserRoleMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 @Service
 public class RoleService {
     private final RoleMapper roleMapper;
@@ -19,10 +21,17 @@ public class RoleService {
         this.userRoleMapper = userRoleMapper;
     }
 
-    public Page<RoleEntity> page(int pageNum, int pageSize, Integer status) {
+    public Page<RoleEntity> page(int pageNum, int pageSize, Integer status, Long scopeTenantId, boolean allTenants) {
         LambdaQueryWrapper<RoleEntity> qw = new LambdaQueryWrapper<>();
+        if (!allTenants && scopeTenantId != null) {
+            qw.eq(RoleEntity::getTenantId, scopeTenantId);
+        }
         qw.eq(status != null, RoleEntity::getStatus, status).orderByDesc(RoleEntity::getId);
         return roleMapper.selectPage(new Page<>(pageNum, pageSize), qw);
+    }
+
+    public RoleEntity getById(Long id) {
+        return roleMapper.selectById(id);
     }
 
     public RoleEntity save(RoleEntity entity) {
@@ -36,9 +45,12 @@ public class RoleService {
     }
 
     @Transactional
-    public boolean delete(Long roleId) {
+    public boolean delete(Long roleId, Long expectedTenantId, boolean systemUser) {
         RoleEntity role = roleMapper.selectById(roleId);
         if (role == null) {
+            return false;
+        }
+        if (!systemUser && !Objects.equals(role.getTenantId(), expectedTenantId)) {
             return false;
         }
         userRoleMapper.deleteByRole(role.getTenantId(), roleId);

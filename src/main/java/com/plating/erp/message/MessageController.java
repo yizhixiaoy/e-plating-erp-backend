@@ -30,13 +30,24 @@ public class MessageController {
         this.messageService = messageService;
     }
 
+    @GetMapping("/notices")
+    @PreAuthorize("@authz.hasPerm('message:add')")
+    public ApiResponse<?> listManageNotices(@RequestParam(defaultValue = "1") Integer pageNum,
+                                            @RequestParam(defaultValue = "20") Integer pageSize) {
+        var u = SecurityUtils.currentUser();
+        var page = messageService.pageNotices(pageNum, pageSize, u.tenantId(), u.isSystem());
+        return ApiResponse.ok(new PageResult<>(page.getRecords(), page.getTotal()));
+    }
+
     @PostMapping("/notices")
     @PreAuthorize("@authz.hasPerm('message:add')")
     @AuditLog(module = "消息中心", operateType = "CREATE", bizModule = "notice", fieldName = "title")
     public ApiResponse<NoticeEntity> createNotice(@Valid @RequestBody MessageVo.NoticeCreateReq body) {
         Long userId = SecurityUtils.currentUser().userId();
+        var me = SecurityUtils.currentUser();
         NoticeEntity entity = new NoticeEntity();
-        entity.setTenantId(body.tenantId() == null ? 1L : body.tenantId());
+        long tid = body.tenantId() == null ? 1L : body.tenantId();
+        entity.setTenantId(me.isSystem() ? tid : me.tenantId());
         entity.setNoticeType(body.noticeType() == null ? "INTERNAL_NOTICE" : body.noticeType());
         entity.setTitle(body.title() == null ? "公告" : body.title());
         entity.setContent(body.content() == null ? "" : body.content());
@@ -62,6 +73,7 @@ public class MessageController {
     @AuditLog(module = "消息中心", operateType = "UPDATE", bizModule = "notice", fieldName = "title")
     public ApiResponse<NoticeEntity> updateNotice(@PathVariable Long noticeId, @Valid @RequestBody MessageVo.NoticeCreateReq body) {
         NoticeEntity found = requireNotice(noticeId);
+        assertNoticeAccess(found);
         if (!EDITABLE_STATUS.contains(found.getStatus())) {
             throw new BizException(ErrorCode.BAD_REQUEST, "当前状态不允许编辑");
         }
@@ -97,6 +109,7 @@ public class MessageController {
     @AuditLog(module = "消息中心", operateType = "PUBLISH", bizModule = "notice", fieldName = "status")
     public ApiResponse<NoticeEntity> publish(@PathVariable Long noticeId) {
         NoticeEntity found = requireNotice(noticeId);
+        assertNoticeAccess(found);
         if (found.getStatus() != null && found.getStatus() == 2) {
             throw new BizException(ErrorCode.BAD_REQUEST, "已发布");
         }
@@ -110,7 +123,9 @@ public class MessageController {
         found.setOfflineAt(null);
         found.setScheduledPublishAt(null);
         found.setUpdatedBy(userId);
-        return ApiResponse.ok(messageService.saveNotice(found, userId));
+        NoticeEntity saved = messageService.saveNotice(found, userId);
+        messageService.deliverNoticeRecipients(saved.getId());
+        return ApiResponse.ok(saved);
     }
 
     @PostMapping("/notices/{noticeId}/schedule")
@@ -118,6 +133,7 @@ public class MessageController {
     @AuditLog(module = "消息中心", operateType = "SCHEDULE", bizModule = "notice", fieldName = "scheduled_publish_at")
     public ApiResponse<NoticeEntity> schedule(@PathVariable Long noticeId, @Valid @RequestBody MessageVo.NoticeScheduleReq body) {
         NoticeEntity found = requireNotice(noticeId);
+        assertNoticeAccess(found);
         if (found.getStatus() != null && found.getStatus() == 2) {
             throw new BizException(ErrorCode.BAD_REQUEST, "已发布请使用下架后再预约");
         }
@@ -136,6 +152,7 @@ public class MessageController {
     @AuditLog(module = "消息中心", operateType = "OFFLINE", bizModule = "notice", fieldName = "status")
     public ApiResponse<NoticeEntity> offline(@PathVariable Long noticeId) {
         NoticeEntity found = requireNotice(noticeId);
+        assertNoticeAccess(found);
         if (found.getStatus() == null || found.getStatus() != 2) {
             throw new BizException(ErrorCode.BAD_REQUEST, "仅已发布内容可下架");
         }
@@ -151,6 +168,7 @@ public class MessageController {
     @AuditLog(module = "消息中心", operateType = "ONLINE", bizModule = "notice", fieldName = "status")
     public ApiResponse<NoticeEntity> online(@PathVariable Long noticeId) {
         NoticeEntity found = requireNotice(noticeId);
+        assertNoticeAccess(found);
         if (found.getStatus() == null || found.getStatus() != 3) {
             throw new BizException(ErrorCode.BAD_REQUEST, "仅已下架内容可再上线");
         }
@@ -158,7 +176,9 @@ public class MessageController {
         found.setStatus(2);
         found.setOfflineAt(null);
         found.setUpdatedBy(userId);
-        return ApiResponse.ok(messageService.saveNotice(found, userId));
+        NoticeEntity saved = messageService.saveNotice(found, userId);
+        messageService.deliverNoticeRecipients(saved.getId());
+        return ApiResponse.ok(saved);
     }
 
     @PostMapping("/notices/{noticeId}/revoke")
@@ -166,6 +186,7 @@ public class MessageController {
     @AuditLog(module = "消息中心", operateType = "REVOKE", bizModule = "notice", fieldName = "status")
     public ApiResponse<NoticeEntity> revoke(@PathVariable Long noticeId) {
         NoticeEntity found = requireNotice(noticeId);
+        assertNoticeAccess(found);
         Long userId = SecurityUtils.currentUser().userId();
         found.setStatus(4);
         found.setUpdatedBy(userId);
@@ -201,5 +222,15 @@ public class MessageController {
             throw new BizException(ErrorCode.NOT_FOUND, "公告不存在");
         }
         return found;
+    }
+
+    private void assertNoticeAccess(NoticeEntity found) {
+        var u = SecurityUtils.currentUser();
+        if (u.isSystem()) {
+            return;
+        }
+        if (found.getTenantId() == null || !found.getTenantId().equals(u.tenantId())) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权操作该公告");
+        }
     }
 }

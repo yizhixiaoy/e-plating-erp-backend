@@ -18,8 +18,12 @@ public class LogService {
         this.bizLogMapper = bizLogMapper;
     }
 
-    public Page<OperLogEntity> pageOper(int pageNum, int pageSize, String moduleTitle, Integer status) {
+    public Page<OperLogEntity> pageOper(int pageNum, int pageSize, String moduleTitle, Integer status,
+                                        Long scopeTenantId, boolean allTenants) {
         LambdaQueryWrapper<OperLogEntity> qw = new LambdaQueryWrapper<>();
+        if (!allTenants && scopeTenantId != null) {
+            qw.eq(OperLogEntity::getTenantId, scopeTenantId);
+        }
         qw.like(moduleTitle != null && !moduleTitle.isBlank(), OperLogEntity::getModuleTitle, moduleTitle)
                 .eq(status != null, OperLogEntity::getStatus, status)
                 .orderByDesc(OperLogEntity::getId);
@@ -30,8 +34,12 @@ public class LogService {
         return operLogMapper.selectById(id);
     }
 
-    public Page<BizLogEntity> pageBiz(int pageNum, int pageSize, String bizModule, Long bizId) {
+    public Page<BizLogEntity> pageBiz(int pageNum, int pageSize, String bizModule, Long bizId,
+                                      Long scopeTenantId, boolean allTenants) {
         LambdaQueryWrapper<BizLogEntity> qw = new LambdaQueryWrapper<>();
+        if (!allTenants && scopeTenantId != null) {
+            qw.eq(BizLogEntity::getTenantId, scopeTenantId);
+        }
         qw.eq(bizModule != null && !bizModule.isBlank(), BizLogEntity::getBizModule, bizModule)
                 .eq(bizId != null, BizLogEntity::getBizId, bizId)
                 .orderByDesc(BizLogEntity::getId);

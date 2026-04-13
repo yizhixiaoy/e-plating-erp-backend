@@ -37,7 +37,7 @@ class RoleServiceCleanupTests {
         when(roleMapper.selectById(40001L)).thenReturn(role);
         when(roleMapper.deleteById(40001L)).thenReturn(1);
 
-        boolean deleted = roleService.delete(40001L);
+        boolean deleted = roleService.delete(40001L, 20001L, false);
 
         assertTrue(deleted);
         verify(userRoleMapper).deleteByRole(20001L, 40001L);
@@ -48,7 +48,7 @@ class RoleServiceCleanupTests {
     void delete_whenRoleMissing_shouldReturnFalse() {
         when(roleMapper.selectById(40001L)).thenReturn(null);
 
-        boolean deleted = roleService.delete(40001L);
+        boolean deleted = roleService.delete(40001L, 20001L, false);
 
         assertFalse(deleted);
         verify(userRoleMapper, never()).deleteByRole(anyLong(), anyLong());

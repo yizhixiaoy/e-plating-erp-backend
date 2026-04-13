@@ -1,6 +1,8 @@
 package com.plating.erp.iam;
 
 import com.plating.erp.common.api.ApiResponse;
+import com.plating.erp.common.api.BizException;
+import com.plating.erp.common.api.ErrorCode;
 import com.plating.erp.common.api.response.CommonResponses;
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.audit.annotation.AuditLog;
@@ -30,7 +32,8 @@ public class RoleController {
     public ApiResponse<?> list(@RequestParam(defaultValue = "1") Integer pageNum,
                                @RequestParam(defaultValue = "20") Integer pageSize,
                                @RequestParam(required = false) Integer status) {
-        var page = roleService.page(pageNum, pageSize, status);
+        var me = SecurityUtils.currentUser();
+        var page = roleService.page(pageNum, pageSize, status, me.tenantId(), me.isSystem());
         return ApiResponse.ok(new PageResult<>(page.getRecords(), page.getTotal()));
     }
 
@@ -38,8 +41,10 @@ public class RoleController {
     @PreAuthorize("@authz.hasPerm('role:add')")
     @AuditLog(module = "角色管理", operateType = "CREATE", bizModule = "role", fieldName = "role_key")
     public ApiResponse<RoleEntity> create(@Valid @RequestBody RoleVo.RoleCreateReq body) {
+        var me = SecurityUtils.currentUser();
         RoleEntity role = new RoleEntity();
-        role.setTenantId(body.tenantId() == null ? 1L : body.tenantId());
+        long tid = body.tenantId() == null ? 1L : body.tenantId();
+        role.setTenantId(me.isSystem() ? tid : me.tenantId());
         role.setRoleName(body.roleName() == null ? "新角色" : body.roleName());
         role.setRoleKey(body.roleKey() == null ? "NEW_ROLE" : body.roleKey());
         role.setDataScope(body.dataScope() == null ? 4 : body.dataScope());
@@ -53,9 +58,15 @@ public class RoleController {
     @PreAuthorize("@authz.hasPerm('role:edit')")
     @AuditLog(module = "角色管理", operateType = "UPDATE", bizModule = "role", fieldName = "role_key")
     public ApiResponse<RoleEntity> update(@PathVariable Long roleId, @Valid @RequestBody RoleVo.RoleUpdateReq body) {
+        RoleEntity existing = roleService.getById(roleId);
+        if (existing == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "角色不存在");
+        }
+        assertRoleTenant(existing);
         RoleEntity role = new RoleEntity();
         role.setId(roleId);
-        role.setTenantId(body.tenantId() == null ? 1L : body.tenantId());
+        var me = SecurityUtils.currentUser();
+        role.setTenantId(me.isSystem() && body.tenantId() != null ? body.tenantId() : existing.getTenantId());
         role.setRoleName(body.roleName() == null ? "新角色" : body.roleName());
         role.setRoleKey(body.roleKey() == null ? "NEW_ROLE" : body.roleKey());
         role.setDataScope(body.dataScope() == null ? 4 : body.dataScope());
@@ -69,7 +80,12 @@ public class RoleController {
     @PreAuthorize("@authz.hasPerm('role:grant')")
     @AuditLog(module = "角色管理", operateType = "GRANT_MENU", bizModule = "role", fieldName = "menu_ids")
     public ApiResponse<RoleResponseVo.RoleMenusResponse> assignMenus(@PathVariable Long roleId, @Valid @RequestBody RoleVo.RoleMenusReq body) {
-        authzCacheService.evictTenant(SecurityUtils.currentUser().tenantId());
+        RoleEntity existing = roleService.getById(roleId);
+        if (existing == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "角色不存在");
+        }
+        assertRoleTenant(existing);
+        authzCacheService.evictTenant(existing.getTenantId());
         return ApiResponse.ok(new RoleResponseVo.RoleMenusResponse(roleId, body.menuIds(), body.dataScope()));
     }
 
@@ -77,8 +93,25 @@ public class RoleController {
     @PreAuthorize("@authz.hasPerm('role:delete')")
     @AuditLog(module = "角色管理", operateType = "DELETE", bizModule = "role", fieldName = "role_key")
     public ApiResponse<CommonResponses.DeleteResponse> delete(@PathVariable Long roleId) {
-        boolean deleted = roleService.delete(roleId);
-        authzCacheService.evictTenant(SecurityUtils.currentUser().tenantId());
+        var me = SecurityUtils.currentUser();
+        RoleEntity existing = roleService.getById(roleId);
+        if (existing != null) {
+            assertRoleTenant(existing);
+        }
+        boolean deleted = roleService.delete(roleId, me.tenantId(), me.isSystem());
+        if (deleted && existing != null) {
+            authzCacheService.evictTenant(existing.getTenantId());
+        }
         return ApiResponse.ok(new CommonResponses.DeleteResponse(deleted, roleId));
+    }
+
+    private void assertRoleTenant(RoleEntity role) {
+        var me = SecurityUtils.currentUser();
+        if (me.isSystem()) {
+            return;
+        }
+        if (role.getTenantId() == null || !role.getTenantId().equals(me.tenantId())) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权操作该角色");
+        }
     }
 }

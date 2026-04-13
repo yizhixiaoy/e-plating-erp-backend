@@ -15,14 +15,18 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenService jwtTokenService;
+    private final CredentialRevocationService credentialRevocationService;
 
-    public JwtAuthenticationFilter(JwtTokenService jwtTokenService) {
+    public JwtAuthenticationFilter(JwtTokenService jwtTokenService,
+                                     CredentialRevocationService credentialRevocationService) {
         this.jwtTokenService = jwtTokenService;
+        this.credentialRevocationService = credentialRevocationService;
     }
 
     @Override
@@ -34,7 +38,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String token = auth.substring(7);
                 Claims claims = jwtTokenService.parse(token);
                 Long userId = Long.parseLong(claims.getSubject());
-                Long tenantId = claims.get("tenantId", Long.class);
+                Long tenantId = toLong(claims.get("tenantId"));
+                Date issuedAt = claims.getIssuedAt();
+                if (tenantId != null && issuedAt != null
+                        && credentialRevocationService.isIssuedBeforeRevocation(tenantId, userId, issuedAt.getTime())) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
+                }
                 String username = claims.get("username", String.class);
                 List<String> roles = claims.get("roles", List.class);
                 Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
@@ -53,6 +63,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             TenantContextHolder.clear();
+        }
+    }
+
+    private static Long toLong(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Number n) {
+            return n.longValue();
+        }
+        try {
+            return Long.parseLong(raw.toString());
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 }

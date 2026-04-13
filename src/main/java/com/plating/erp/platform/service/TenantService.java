@@ -15,9 +15,13 @@ public class TenantService {
         this.tenantMapper = tenantMapper;
     }
 
-    public Page<TenantEntity> page(int pageNum, int pageSize, Integer status, String keyword) {
+    /**
+     * @param scopeTenantId 非平台用户时仅允许查看本租户；为 null 表示平台可查全部
+     */
+    public Page<TenantEntity> page(int pageNum, int pageSize, Integer status, String keyword, Long scopeTenantId) {
         LambdaQueryWrapper<TenantEntity> qw = new LambdaQueryWrapper<>();
-        qw.eq(status != null, TenantEntity::getStatus, status)
+        qw.eq(scopeTenantId != null, TenantEntity::getId, scopeTenantId)
+                .eq(status != null, TenantEntity::getStatus, status)
                 .and(keyword != null && !keyword.isBlank(), w -> w.like(TenantEntity::getTenantName, keyword)
                         .or().like(TenantEntity::getShortCode, keyword))
                 .orderByDesc(TenantEntity::getId);

@@ -8,6 +8,7 @@ import com.plating.erp.audit.annotation.AuditLog;
 import com.plating.erp.platform.entity.TenantEntity;
 import com.plating.erp.platform.service.TenantService;
 import com.plating.erp.platform.vo.TenantVo;
+import com.plating.erp.common.security.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -43,13 +44,16 @@ public class TenantController {
                                @RequestParam(defaultValue = "20") Integer pageSize,
                                @RequestParam(required = false) Integer status,
                                @RequestParam(required = false) String keyword) {
-        var page = tenantService.page(pageNum, pageSize, status, keyword);
+        var user = SecurityUtils.currentUser();
+        Long scope = user.isSystem() ? null : user.tenantId();
+        var page = tenantService.page(pageNum, pageSize, status, keyword, scope);
         return ApiResponse.ok(new PageResult<>(page.getRecords(), page.getTotal()));
     }
 
     @GetMapping("/{tenantId}")
     @PreAuthorize("@authz.hasPerm('tenant:view')")
     public ApiResponse<TenantEntity> detail(@PathVariable Long tenantId) {
+        assertTenantScope(tenantId);
         return ApiResponse.ok(tenantService.getById(tenantId));
     }
 
@@ -57,6 +61,7 @@ public class TenantController {
     @PreAuthorize("@authz.hasPerm('tenant:edit')")
     @AuditLog(module = "租户管理", operateType = "UPDATE", bizModule = "tenant", fieldName = "tenant_name")
     public ApiResponse<TenantEntity> update(@PathVariable Long tenantId, @Valid @RequestBody TenantVo.TenantUpdateReq body) {
+        assertTenantScope(tenantId);
         TenantEntity t = tenantService.getById(tenantId);
         if (t == null) {
             throw new BizException(ErrorCode.NOT_FOUND, "租户不存在");
@@ -75,11 +80,19 @@ public class TenantController {
     @PreAuthorize("@authz.hasPerm('tenant:status')")
     @AuditLog(module = "租户管理", operateType = "STATUS", bizModule = "tenant", fieldName = "status")
     public ApiResponse<TenantEntity> updateStatus(@PathVariable Long tenantId, @Valid @RequestBody TenantVo.TenantStatusReq body) {
+        assertTenantScope(tenantId);
         TenantEntity t = tenantService.getById(tenantId);
         if (t == null) {
             throw new BizException(ErrorCode.NOT_FOUND, "租户不存在");
         }
         t.setStatus(body.status() == null ? 0 : body.status());
         return ApiResponse.ok(tenantService.save(t));
+    }
+
+    private void assertTenantScope(Long tenantId) {
+        var user = SecurityUtils.currentUser();
+        if (!user.isSystem() && !user.tenantId().equals(tenantId)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权访问该租户");
+        }
     }
 }

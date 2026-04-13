@@ -46,3 +46,5 @@ app:
     refresh-expire-seconds: 604800
   authz:
     cache-seconds: ${AUTHZ_CACHE_SECONDS:120}
+  message:
+    publish-check-ms: ${MESSAGE_PUBLISH_CHECK_MS:60000}
