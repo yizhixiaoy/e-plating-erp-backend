@@ -1,44 +1,31 @@
 package com.plating.erp.common.security;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Date;
 import java.util.List;
 
-@Component
-public class JwtTokenService {
-    private final SecretKey key;
-    private final long expireSeconds;
+public interface JwtTokenService {
+    /**
+     * 创建 JWT Token
+     * 
+     * @param userId 用户ID
+     * @param tenantId 租户ID
+     * @param username 用户名
+     * @param roles 角色列表
+     * @param userType 用户类型（0=平台用户，1=租户用户）
+     * @return JWT Token 字符串
+     */
+    String createToken(Long userId, Long tenantId, String username, List<String> roles, Integer userType);
 
-    public JwtTokenService(@Value("${app.jwt.secret}") String secret,
-                           @Value("${app.jwt.expire-seconds}") long expireSeconds) {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expireSeconds = expireSeconds;
+    /**
+     * 创建 JWT Token（兼容旧接口，userType 默认为租户用户）
+     * @deprecated 使用新接口 {@link #createToken(Long, Long, String, List, Integer)}
+     */
+    @Deprecated
+    default String createToken(Long userId, Long tenantId, String username, List<String> roles) {
+        return createToken(userId, tenantId, username, roles, 1);
     }
 
-    public String createToken(Long userId, Long tenantId, String username, List<String> roles) {
-        long now = System.currentTimeMillis();
-        HashMap<String, Object> claims = new HashMap<>();
-        claims.put("tenantId", tenantId);
-        claims.put("username", username);
-        claims.put("roles", roles);
-        return Jwts.builder()
-                .subject(String.valueOf(userId))
-                .claims(claims)
-                .issuedAt(new Date(now))
-                .expiration(new Date(now + expireSeconds * 1000))
-                .signWith(key)
-                .compact();
-    }
+    Claims parse(String token);
 
-    public Claims parse(String token) {
-        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
-    }
+    Long getUserIdFromToken(String token);
 }

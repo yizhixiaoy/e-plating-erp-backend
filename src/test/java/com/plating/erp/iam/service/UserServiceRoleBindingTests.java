@@ -5,6 +5,7 @@ import com.plating.erp.iam.entity.UserEntity;
 import com.plating.erp.iam.entity.UserRoleEntity;
 import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.iam.mapper.UserRoleMapper;
+import com.plating.erp.iam.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -34,7 +35,7 @@ class UserServiceRoleBindingTests {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        userService = new UserService(userMapper, userRoleMapper, authzCacheService, passwordEncoder);
+        userService = new UserServiceImpl(userMapper, userRoleMapper, authzCacheService, passwordEncoder);
     }
 
     @Test

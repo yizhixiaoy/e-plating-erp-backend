@@ -3,6 +3,7 @@ package com.plating.erp.iam.service;
 import com.plating.erp.iam.entity.RoleEntity;
 import com.plating.erp.iam.mapper.RoleMapper;
 import com.plating.erp.iam.mapper.UserRoleMapper;
+import com.plating.erp.iam.service.impl.RoleServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -26,7 +27,7 @@ class RoleServiceCleanupTests {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        roleService = new RoleService(roleMapper, userRoleMapper);
+        roleService = new RoleServiceImpl(roleMapper, userRoleMapper);
     }
 
     @Test

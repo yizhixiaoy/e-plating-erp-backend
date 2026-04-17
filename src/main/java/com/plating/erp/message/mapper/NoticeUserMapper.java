@@ -29,4 +29,9 @@ public interface NoticeUserMapper extends BaseMapper<NoticeUserEntity> {
                                              @Param("readStatus") Integer readStatus,
                                              @Param("offset") long offset,
                                              @Param("limit") int limit);
+
+    /**
+     * 批量插入通知记录
+     */
+    void batchInsert(@Param("list") List<NoticeUserEntity> list);
 }

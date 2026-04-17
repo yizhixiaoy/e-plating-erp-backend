@@ -1,5 +1,6 @@
 package com.plating.erp.platform.vo;
 
+import com.plating.erp.common.validation.ValidationConstants;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -9,29 +10,62 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
+/**
+ * 租户相关 VO
+ * 
+ * 校验规则与前端 validation.ts 和数据库约束保持一致
+ */
 public class TenantVo {
     public record TenantCreateReq(
-            @NotBlank(message = "tenantName不能为空") @Size(min = 2, max = 64, message = "tenantName长度需在2-64") String tenantName,
+            @NotBlank(message = "租户名称不能为空") 
+            @Size(min = ValidationConstants.TENANT_NAME_MIN_LENGTH, max = ValidationConstants.TENANT_NAME_MAX_LENGTH, 
+                  message = "名称长度为2-64个字符") 
+            String tenantName,
             String avatarUrl,
-            @NotBlank(message = "shortCode不能为空") @Size(max = 16, message = "shortCode长度不能超过16") @Pattern(regexp = "^[a-z]+$", message = "shortCode需为小写字母") String shortCode,
-            @NotBlank(message = "contactName不能为空") @Size(max = 32, message = "contactName长度不能超过32") String contactName,
-            @NotBlank(message = "phone不能为空") @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,
-            @NotNull(message = "expireTime不能为空") LocalDateTime expireTime,
+            @NotBlank(message = "租户简称不能为空") 
+            @Size(min = ValidationConstants.SHORT_CODE_MIN_LENGTH, max = ValidationConstants.SHORT_CODE_MAX_LENGTH, 
+                  message = "简称长度为2-16个字符") 
+            @Pattern(regexp = ValidationConstants.SHORT_CODE_REGEX, message = ValidationConstants.SHORT_CODE_MESSAGE) 
+            String shortCode,
+            @NotBlank(message = "联系人不能为空") 
+            @Size(max = ValidationConstants.CONTACT_NAME_MAX_LENGTH, 
+                  message = "联系人长度为2-32个字符") 
+            String contactName,
+            @NotBlank(message = "手机号不能为空") 
+            @Pattern(regexp = ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
+            String phone,
+            @NotNull(message = "到期时间不能为空") 
+            LocalDateTime expireTime,
+            @Pattern(regexp = ValidationConstants.URL_REGEX, message = ValidationConstants.URL_MESSAGE) 
             String domain
     ) {
     }
 
     public record TenantUpdateReq(
-            @Size(min = 2, max = 64, message = "tenantName长度需在2-64") String tenantName,
+            @Size(min = ValidationConstants.TENANT_NAME_MIN_LENGTH, max = ValidationConstants.TENANT_NAME_MAX_LENGTH, 
+                  message = "名称长度为2-64个字符") 
+            String tenantName,
             String avatarUrl,
-            @Pattern(regexp = "^[a-z]+$", message = "shortCode需为小写字母") String shortCode,
-            @Size(max = 32, message = "contactName长度不能超过32") String contactName,
-            @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,
+            @Size(min = ValidationConstants.SHORT_CODE_MIN_LENGTH, max = ValidationConstants.SHORT_CODE_MAX_LENGTH, 
+                  message = "简称长度为2-16个字符") 
+            @Pattern(regexp = ValidationConstants.SHORT_CODE_REGEX, message = ValidationConstants.SHORT_CODE_MESSAGE) 
+            String shortCode,
+            @Size(max = ValidationConstants.CONTACT_NAME_MAX_LENGTH, 
+                  message = "联系人长度为2-32个字符") 
+            String contactName,
+            @Pattern(regexp = ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
+            String phone,
             LocalDateTime expireTime,
+            @Pattern(regexp = ValidationConstants.URL_REGEX, message = ValidationConstants.URL_MESSAGE) 
             String domain
     ) {
     }
 
-    public record TenantStatusReq(@NotNull(message = "status不能为空") @Min(value = 0, message = "status只能为0或1") @Max(value = 1, message = "status只能为0或1") Integer status) {
+    public record TenantStatusReq(
+            @NotNull(message = "状态不能为空") 
+            @Min(value = 0, message = "状态只能为0或1") 
+            @Max(value = 1, message = "状态只能为0或1") 
+            Integer status
+    ) {
     }
 }

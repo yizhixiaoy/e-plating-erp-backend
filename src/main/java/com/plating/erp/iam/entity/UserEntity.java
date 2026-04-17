@@ -4,6 +4,13 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
+/**
+ * 用户实体类
+ * 
+ * 包含用户基本信息、登录信息、审计信息等
+ */
 @Data
 @TableName("sys_user")
 public class UserEntity {
@@ -19,4 +26,16 @@ public class UserEntity {
     private String email;
     private Integer userType;
     private Integer status;
+    private LocalDateTime lastLoginAt;
+    private String lastLoginIp;
+    private Integer loginCount;
+    private String wechatOpenid;
+    private String dingtalkUserid;
+    
+    // 审计字段
+    private Long createdBy;
+    private LocalDateTime createdAt;
+    private Long updatedBy;
+    private LocalDateTime updatedAt;
+    private Integer deleted;
 }

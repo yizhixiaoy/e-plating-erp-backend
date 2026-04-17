@@ -10,4 +10,8 @@ public record ApiResponse<T>(
     public static <T> ApiResponse<T> ok(T data) {
         return new ApiResponse<>(200, "操作成功", data, "trace-" + System.currentTimeMillis(), System.currentTimeMillis());
     }
+
+    public static <T> ApiResponse<T> error(int code, String msg) {
+        return new ApiResponse<>(code, msg, null, "trace-" + System.currentTimeMillis(), System.currentTimeMillis());
+    }
 }

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.plating.erp.message.mapper.NoticeUserMapper">
+    <!-- 批量插入通知记录 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO msg_notice_user (
+            id,
+            tenant_id,
+            notice_id,
+            user_id,
+            read_status,
+            read_time,
+            created_at,
+            updated_at
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.id},
+                #{item.tenantId},
+                #{item.noticeId},
+                #{item.userId},
+                #{item.readStatus},
+                #{item.readTime},
+                #{item.createdAt},
+                #{item.updatedAt}
+            )
+        </foreach>
+    </insert>
+</mapper>

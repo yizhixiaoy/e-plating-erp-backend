@@ -1,0 +1,42 @@
+package com.plating.erp.common.security.impl;
+
+import com.plating.erp.common.security.AuthzCacheService;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+
+import java.util.Set;
+
+@Service
+public class AuthzCacheServiceImpl implements AuthzCacheService {
+    private final StringRedisTemplate redisTemplate;
+
+    public AuthzCacheServiceImpl(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
+    @Override
+    public void evictUser(Long tenantId, Long userId) {
+        if (tenantId == null || userId == null) {
+            return;
+        }
+        redisTemplate.delete("erp:authz:roles:" + tenantId + ":" + userId);
+        redisTemplate.delete("erp:authz:perms:" + tenantId + ":" + userId);
+    }
+
+    @Override
+    public void evictTenant(Long tenantId) {
+        if (tenantId == null) {
+            return;
+        }
+        deleteByPattern("erp:authz:roles:" + tenantId + ":*");
+        deleteByPattern("erp:authz:perms:" + tenantId + ":*");
+    }
+
+    private void deleteByPattern(String pattern) {
+        Set<String> keys = redisTemplate.keys(pattern);
+        if (keys == null || keys.isEmpty()) {
+            return;
+        }
+        redisTemplate.delete(keys);
+    }
+}

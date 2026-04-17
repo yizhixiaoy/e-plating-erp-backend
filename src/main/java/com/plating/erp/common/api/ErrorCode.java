@@ -13,7 +13,10 @@ public enum ErrorCode {
     TENANT_FROZEN(1002, "租户已冻结"),
     USER_DISABLED(1003, "账号已停用"),
     CROSS_TENANT_FORBIDDEN(1004, "禁止访问其他租户数据"),
-    REFRESH_TOKEN_INVALID(1005, "refreshToken无效或已失效");
+    REFRESH_TOKEN_INVALID(1005, "refreshToken无效或已失效"),
+    TOO_MANY_ATTEMPTS(1006, "登录尝试次数过多，请稍后再试"),
+    BRUTE_FORCE(1007, "检测到暴力破解行为，请稍后再试");
+
 
     private final int code;
     private final String msg;

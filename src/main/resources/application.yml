@@ -28,6 +28,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+#    validate-on-migrate: false
   jackson:
     time-zone: Asia/Shanghai
 
@@ -38,6 +39,12 @@ springdoc:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    com.plating: debug
+#    root: debug
 
 app:
   jwt:

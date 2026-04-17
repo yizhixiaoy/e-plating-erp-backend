@@ -6,6 +6,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 角色实体类
+ */
 @Data
 @TableName("sys_role")
 public class RoleEntity {
@@ -16,9 +19,7 @@ public class RoleEntity {
     private String roleKey;
     private Integer dataScope;
     private Integer status;
-    private Long createdBy;
     private LocalDateTime createdAt;
-    private Long updatedBy;
     private LocalDateTime updatedAt;
     private Integer deleted;
 }

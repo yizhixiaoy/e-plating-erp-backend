@@ -1,5 +1,6 @@
 package com.plating.erp.common.security;
 
+import com.plating.erp.common.security.impl.AuthzCacheServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -21,7 +22,7 @@ class AuthzCacheServiceTests {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        authzCacheService = new AuthzCacheService(redisTemplate);
+        authzCacheService = new AuthzCacheServiceImpl(redisTemplate);
     }
 
     @Test

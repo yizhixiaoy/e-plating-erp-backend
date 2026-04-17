@@ -1,111 +1,41 @@
 package com.plating.erp.iam.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.plating.erp.common.security.AuthzCacheService;
+import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.iam.entity.UserEntity;
-import com.plating.erp.iam.entity.UserRoleEntity;
-import com.plating.erp.iam.mapper.UserRoleMapper;
-import com.plating.erp.iam.mapper.UserMapper;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Service
-public class UserService {
-    private final UserMapper userMapper;
-    private final UserRoleMapper userRoleMapper;
-    private final AuthzCacheService authzCacheService;
-    private final PasswordEncoder passwordEncoder;
+public interface UserService {
+    UserEntity findByUsernameAndTenantId(String username, Long tenantId);
 
-    public UserService(UserMapper userMapper,
-                       UserRoleMapper userRoleMapper,
-                       AuthzCacheService authzCacheService,
-                       PasswordEncoder passwordEncoder) {
-        this.userMapper = userMapper;
-        this.userRoleMapper = userRoleMapper;
-        this.authzCacheService = authzCacheService;
-        this.passwordEncoder = passwordEncoder;
-    }
+    UserEntity findByUsername(String username, Long tenantId);
 
-    public Page<UserEntity> page(int pageNum, int pageSize, Long deptId, Integer status,
-                                 Long scopeTenantId, boolean allTenants) {
-        LambdaQueryWrapper<UserEntity> qw = new LambdaQueryWrapper<>();
-        if (!allTenants && scopeTenantId != null) {
-            qw.eq(UserEntity::getTenantId, scopeTenantId);
-        }
-        qw.eq(status != null, UserEntity::getStatus, status)
-                .eq(deptId != null, UserEntity::getDeptId, deptId)
-                .orderByDesc(UserEntity::getId);
-        return userMapper.selectPage(new Page<>(pageNum, pageSize), qw);
-    }
+    UserEntity findByPhone(String phone, Long tenantId);
 
-    public UserEntity getById(Long id) {
-        return userMapper.selectById(id);
-    }
+    boolean checkPassword(String rawPassword, String encodedPassword);
 
-    public UserEntity save(UserEntity entity) {
-        if (entity.getPasswordHash() != null && !entity.getPasswordHash().startsWith("$2a$")) {
-            entity.setPasswordHash(passwordEncoder.encode(entity.getPasswordHash()));
-        }
-        if (entity.getId() == null) {
-            entity.setId(IdWorker.getId());
-            userMapper.insert(entity);
-        } else {
-            userMapper.updateById(entity);
-        }
-        return entity;
-    }
+    boolean updatePassword(Long userId, String newPassword);
 
-    public UserEntity findByUsernameAndTenantId(String username, Long tenantId) {
-        return userMapper.selectOne(new LambdaQueryWrapper<UserEntity>()
-                .eq(UserEntity::getUsername, username)
-                .eq(UserEntity::getTenantId, tenantId)
-                .last("limit 1"));
-    }
+    /**
+     * 分页查询用户列表
+     * 
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @param deptId 部门ID
+     * @param status 状态
+     * @param keyword 关键字（姓名/账号/手机号）
+     * @param tenantId 租户ID（平台管理员使用）
+     * @param isSystem 是否平台管理员
+     * @return 分页结果
+     */
+    PageResult<UserEntity> page(int pageNum, int pageSize, Long deptId, Integer status, 
+                                String keyword, Long tenantId, Boolean isSystem);
 
-    @Transactional
-    public int bindRoles(Long tenantId, Long userId, List<Long> roleIds) {
-        Long resolvedTenantId = resolveTenantId(tenantId, userId);
-        if (resolvedTenantId == null) {
-            return 0;
-        }
-        userRoleMapper.deleteByUser(resolvedTenantId, userId);
-        int count = 0;
-        for (Long roleId : roleIds) {
-            UserRoleEntity rel = new UserRoleEntity();
-            rel.setId(IdWorker.getId());
-            rel.setTenantId(resolvedTenantId);
-            rel.setUserId(userId);
-            rel.setRoleId(roleId);
-            count += userRoleMapper.insert(rel);
-        }
-        authzCacheService.evictUser(resolvedTenantId, userId);
-        return count;
-    }
+    int bindRoles(Long tenantId, Long userId, List<Long> roleIds);
 
-    @Transactional
-    public boolean unbindRole(Long tenantId, Long userId, Long roleId) {
-        Long resolvedTenantId = resolveTenantId(tenantId, userId);
-        if (resolvedTenantId == null) {
-            return false;
-        }
-        int deleted = userRoleMapper.delete(new LambdaQueryWrapper<UserRoleEntity>()
-                .eq(UserRoleEntity::getTenantId, resolvedTenantId)
-                .eq(UserRoleEntity::getUserId, userId)
-                .eq(UserRoleEntity::getRoleId, roleId));
-        authzCacheService.evictUser(resolvedTenantId, userId);
-        return deleted > 0;
-    }
+    boolean unbindRole(Long tenantId, Long userId, Long roleId);
 
-    private Long resolveTenantId(Long tenantId, Long userId) {
-        if (tenantId != null) {
-            return tenantId;
-        }
-        UserEntity user = userMapper.selectById(userId);
-        return user == null ? null : user.getTenantId();
-    }
+    UserEntity getById(Long userId);
+
+    boolean save(UserEntity entity);
 }

@@ -15,6 +15,9 @@ import com.plating.erp.common.security.JwtTokenService;
 import com.plating.erp.common.security.PermissionMapper;
 import com.plating.erp.common.security.SecurityConfig;
 import com.plating.erp.common.security.SecurityUtils;
+import com.plating.erp.common.security.impl.AuthzServiceImpl;
+import com.plating.erp.common.security.impl.CredentialRevocationServiceImpl;
+import com.plating.erp.common.security.impl.JwtTokenServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -54,9 +57,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({
         SecurityConfig.class,
         JwtAuthenticationFilter.class,
-        JwtTokenService.class,
-        CredentialRevocationService.class,
-        AuthzService.class,
+        JwtTokenServiceImpl.class,
+        CredentialRevocationServiceImpl.class,
+        AuthzServiceImpl.class,
         AuditLogAspect.class,
         GlobalExceptionHandler.class
 })

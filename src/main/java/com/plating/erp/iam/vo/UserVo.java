@@ -1,5 +1,6 @@
 package com.plating.erp.iam.vo;
 
+import com.plating.erp.common.validation.ValidationConstants;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -9,34 +10,66 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
+/**
+ * 用户相关 VO
+ * 
+ * 校验规则与前端 validation.ts 和数据库约束保持一致
+ */
 public class UserVo {
     public record UserCreateReq(
-            @NotNull(message = "tenantId不能为空") Long tenantId,
-            @NotBlank(message = "username不能为空") @Size(min = 2, max = 32, message = "username长度需在2-32") @Pattern(regexp = "^[a-zA-Z0-9:_-]+$", message = "username格式不合法") String username,
-            @NotBlank(message = "password不能为空") @Size(min = 6, max = 64, message = "password长度需在6-64") String password,
-            @NotBlank(message = "realName不能为空") @Size(min = 2, max = 30, message = "realName长度需在2-30") String realName,
+            @NotNull(message = "租户ID不能为空") Long tenantId,
+            @NotBlank(message = "账号不能为空") 
+            @Size(min = ValidationConstants.USERNAME_MIN_LENGTH, max = ValidationConstants.USERNAME_MAX_LENGTH, 
+                  message = "账号长度为4-12个字符") 
+            @Pattern(regexp = ValidationConstants.USERNAME_REGEX, message = ValidationConstants.USERNAME_MESSAGE) 
+            String username,
+            @NotBlank(message = "密码不能为空") 
+            @Size(min = ValidationConstants.PASSWORD_MIN_LENGTH, max = ValidationConstants.PASSWORD_MAX_LENGTH, 
+                  message = "密码长度为8-20个字符") 
+            @Pattern(regexp = ValidationConstants.PASSWORD_REGEX, message = ValidationConstants.PASSWORD_MESSAGE) 
+            String password,
+            @NotBlank(message = "姓名不能为空") 
+            @Size(min = ValidationConstants.REAL_NAME_MIN_LENGTH, max = ValidationConstants.REAL_NAME_MAX_LENGTH, 
+                  message = "姓名长度为2-30个字符") 
+            String realName,
             String avatarUrl,
             Long deptId,
-            @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,
-            @Pattern(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$", message = "邮箱格式不正确") String email
+            @Pattern(regexp = ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
+            String phone,
+            @Pattern(regexp = ValidationConstants.EMAIL_REGEX, message = ValidationConstants.EMAIL_MESSAGE) 
+            String email
     ) {
     }
 
     public record UserUpdateReq(
-            @Size(min = 2, max = 32, message = "username长度需在2-32") @Pattern(regexp = "^[a-zA-Z0-9:_-]+$", message = "username格式不合法") String username,
-            @Size(min = 2, max = 30, message = "realName长度需在2-30") String realName,
+            @Size(min = ValidationConstants.USERNAME_MIN_LENGTH, max = ValidationConstants.USERNAME_MAX_LENGTH, 
+                  message = "账号长度为4-12个字符") 
+            @Pattern(regexp = ValidationConstants.USERNAME_REGEX, message = ValidationConstants.USERNAME_MESSAGE) 
+            String username,
+            @Size(min = ValidationConstants.REAL_NAME_MIN_LENGTH, max = ValidationConstants.REAL_NAME_MAX_LENGTH, 
+                  message = "姓名长度为2-30个字符") 
+            String realName,
             String avatarUrl,
             Long deptId,
-            @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,
-            @Pattern(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$", message = "邮箱格式不正确") String email
+            @Pattern(regexp = ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
+            String phone,
+            @Pattern(regexp = ValidationConstants.EMAIL_REGEX, message = ValidationConstants.EMAIL_MESSAGE) 
+            String email
     ) {
     }
 
-    public record UserStatusReq(@NotNull(message = "status不能为空") @Min(value = 0, message = "status只能为0或1") @Max(value = 1, message = "status只能为0或1") Integer status) {
+    public record UserStatusReq(
+            @NotNull(message = "状态不能为空") 
+            @Min(value = 0, message = "状态只能为0或1") 
+            @Max(value = 1, message = "状态只能为0或1") 
+            Integer status
+    ) {
     }
 
     public record UserRoleBindReq(
-            @NotNull(message = "roleIds不能为空") @Size(min = 1, message = "roleIds至少包含1个角色") List<@NotNull(message = "roleId不能为空") Long> roleIds
+            @NotNull(message = "角色ID列表不能为空") 
+            @Size(min = 1, message = "至少选择1个角色") 
+            List<@NotNull(message = "角色ID不能为空") Long> roleIds
     ) {
     }
 }
