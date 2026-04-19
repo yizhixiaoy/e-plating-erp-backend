@@ -8,6 +8,9 @@ import com.plating.erp.iam.entity.UserEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
+
+import java.time.LocalDateTime;
 
 /**
  * 用户数据访问层
@@ -53,4 +56,22 @@ public interface UserMapper extends BaseMapper<UserEntity> {
     @InterceptorIgnore(tenantLine = "true")
     @Select("SELECT * FROM sys_user WHERE phone = #{phone} AND tenant_id = #{tenantId} AND deleted = 0 LIMIT 1")
     UserEntity selectByPhoneForAuth(@Param("phone") String phone, @Param("tenantId") Long tenantId);
+    
+    /**
+     * 更新用户登录信息（跳过租户拦截器）
+     * 仅用于登录成功后更新登录统计
+     * 
+     * @param userId 用户ID
+     * @param lastLoginAt 最后登录时间
+     * @param loginCount 登录次数
+     * @param lastLoginIp 最后登录IP
+     * @return 影响行数
+     */
+    @InterceptorIgnore(tenantLine = "true")
+    @Update("UPDATE sys_user SET last_login_at = #{lastLoginAt}, login_count = #{loginCount}, " +
+            "last_login_ip = #{lastLoginIp} WHERE id = #{userId} AND deleted = 0")
+    int updateLoginInfo(@Param("userId") Long userId, 
+                        @Param("lastLoginAt") LocalDateTime lastLoginAt,
+                        @Param("loginCount") Integer loginCount,
+                        @Param("lastLoginIp") String lastLoginIp);
 }

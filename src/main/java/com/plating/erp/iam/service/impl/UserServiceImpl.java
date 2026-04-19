@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.common.security.AuthzCacheService;
+import com.plating.erp.common.util.FileUploadUtils;
+import com.plating.erp.common.vo.FileUploadVO;
 import com.plating.erp.iam.entity.UserEntity;
 import com.plating.erp.iam.entity.UserRoleEntity;
 import com.plating.erp.iam.mapper.UserMapper;
@@ -15,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -174,6 +177,27 @@ public class UserServiceImpl implements UserService {
             entity.setId(IdWorker.getId());
         }
         return userMapper.insertOrUpdate(entity);
+    }
+
+    @Override
+    public String updateAvatar(Long userId, MultipartFile avatarFile) {
+        try {
+            // 头像存储路径: iam/avatar/{yyyy}_{MM}_{dd}/{uuid}.{ext}
+            FileUploadVO uploadResult = FileUploadUtils.upload(avatarFile, "iam/avatar");
+            
+            UserEntity user = userMapper.selectById(userId);
+            if (user == null) {
+                throw new RuntimeException("用户不存在");
+            }
+            user.setAvatarUrl(uploadResult.getOssPath());
+            userMapper.updateById(user);
+            
+            log.info("用户头像更新成功: userId={}, ossPath={}", userId, uploadResult.getOssPath());
+            return uploadResult.getOssPath();
+        } catch (Exception e) {
+            log.error("用户头像更新失败: userId={}", userId, e);
+            throw new RuntimeException("头像上传失败: " + e.getMessage());
+        }
     }
 
     private Long resolveTenantId(Long tenantId, Long userId) {

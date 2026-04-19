@@ -30,7 +30,8 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
         if (storedCode == null) {
             throw new BizException(ErrorCode.BAD_REQUEST, "验证码已过期");
         }
-        if (!storedCode.equals(code)) {
+        // 忽略大小写比较验证码
+        if (!storedCode.equalsIgnoreCase(code)) {
             throw new BizException(ErrorCode.BAD_REQUEST, "验证码错误");
         }
         redisTemplate.delete(key);
@@ -64,11 +65,16 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
         redisTemplate.opsForValue().set(limitKey, String.valueOf(count + 1), Duration.ofHours(1));
     }
 
+    /**
+     * 生成随机验证码：6位数字和字母组合（大写字母）
+     */
     private String generateRandomCode(int length) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder(length);
+        // 字符集：数字0-9 + 大写字母A-Z（排除易混淆字符：0/O, 1/I/l）
+        String chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
         for (int i = 0; i < length; i++) {
-            sb.append(random.nextInt(10));
+            sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();
     }

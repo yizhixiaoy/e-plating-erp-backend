@@ -36,12 +36,12 @@ public class RoleVo {
 
     public record RoleUpdateReq(
             Long tenantId,
-            @Size(min = ValidationConstants.ROLE_NAME_MIN_LENGTH, max = ValidationConstants.ROLE_NAME_MAX_LENGTH, 
-                  message = "角色名称长度为2-32个字符") 
+            @Size(max = ValidationConstants.ROLE_NAME_MAX_LENGTH, 
+                  message = "角色名称长度不能超过32个字符") 
             String roleName,
-            @Size(min = ValidationConstants.ROLE_KEY_MIN_LENGTH, max = ValidationConstants.ROLE_KEY_MAX_LENGTH, 
-                  message = "权限字符长度为1-64个字符") 
-            @Pattern(regexp = ValidationConstants.ROLE_KEY_REGEX, message = ValidationConstants.ROLE_KEY_MESSAGE) 
+            @Size(max = ValidationConstants.ROLE_KEY_MAX_LENGTH, 
+                  message = "权限字符长度不能超过64个字符") 
+            @Pattern(regexp = "^$|" + ValidationConstants.ROLE_KEY_REGEX, message = ValidationConstants.ROLE_KEY_MESSAGE) 
             String roleKey,
             @Min(value = 1, message = "数据范围最小为1") 
             @Max(value = 4, message = "数据范围最大为4") 

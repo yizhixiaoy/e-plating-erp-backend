@@ -2,6 +2,7 @@ package com.plating.erp.auth.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.plating.erp.audit.annotation.AuditLog;
 import com.plating.erp.auth.entity.LoginHistoryEntity;
 import com.plating.erp.auth.mapper.LoginHistoryMapper;
 import com.plating.erp.auth.service.AuthService;
@@ -14,17 +15,15 @@ import com.plating.erp.common.api.response.CommonResponses;
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.common.security.JwtTokenService;
 import com.plating.erp.common.security.RefreshTokenService;
+import com.plating.erp.common.security.SecurityUtils;
 import com.plating.erp.common.util.IpUtils;
+import com.plating.erp.iam.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -43,16 +42,19 @@ public class AuthController {
     private final LoginHistoryMapper loginHistoryMapper;
     private final ScanLoginService scanLoginService;
     private final LoginSecurityService loginSecurityService;
+    private final UserService userService;
 
     public AuthController(AuthService authService, JwtTokenService jwtTokenService,
                          RefreshTokenService refreshTokenService, LoginHistoryMapper loginHistoryMapper,
-                         ScanLoginService scanLoginService, LoginSecurityService loginSecurityService) {
+                         ScanLoginService scanLoginService, LoginSecurityService loginSecurityService,
+                         UserService userService) {
         this.authService = authService;
         this.jwtTokenService = jwtTokenService;
         this.refreshTokenService = refreshTokenService;
         this.loginHistoryMapper = loginHistoryMapper;
         this.scanLoginService = scanLoginService;
         this.loginSecurityService = loginSecurityService;
+        this.userService = userService;
     }
 
     /**
@@ -86,6 +88,24 @@ public class AuthController {
             log.info("找到用户所属租户, username={}, tenant={}", username, result.tenantName());
         } else {
             log.warn("未找到用户所属租户, username={}", username);
+        }
+        return ApiResponse.ok(result);
+    }
+
+    /**
+     * 根据手机号查询租户信息
+     * 用于忘记密码时自动获取用户所属租户
+     * @param phone 手机号
+     * @return 手机号所属租户信息
+     */
+    @GetMapping("/tenants/by-phone")
+    public ApiResponse<?> getTenantByPhone(@RequestParam String phone) {
+        log.debug("根据手机号查询租户, phone={}", phone);
+        AuthResponseVo.TenantByPhoneResult result = authService.getTenantByPhone(phone);
+        if (result.found()) {
+            log.info("找到手机号所属租户, phone={}, tenant={}", phone, result.tenantName());
+        } else {
+            log.warn("未找到手机号所属租户, phone={}", phone);
         }
         return ApiResponse.ok(result);
     }
@@ -141,7 +161,9 @@ public class AuthController {
                 payload.qrToken(),
                 payload.clientType(),
                 payload.rememberTenant(),
-                clientIp
+                clientIp,
+                payload.deviceInfo(),
+                payload.userAgent()
         );
         
         try {
@@ -202,15 +224,30 @@ public class AuthController {
     /**
      * 生成扫码登录二维码票据
      * @param payload 客户端类型
-     * @return 二维码Token和URL
+     * @return 二维码Token和Base64图片
      */
     @PostMapping("/scan-ticket")
     public ApiResponse<?> scanTicket(@Valid @RequestBody AuthVo.ScanTicketReq payload) {
         log.info("生成扫码登录二维码, clientType={}", payload.clientType());
-        String qrToken = scanLoginService.generateQrTicket();
-        String qrUrl = "https://erp.com/scan?token=" + qrToken;
+        String[] result = scanLoginService.generateQrTicket();
+        String qrToken = result[0];
+        String qrImageBase64 = result[1];
         log.info("扫码登录二维码生成成功, qrToken={}", qrToken);
-        return ApiResponse.ok(new AuthResponseVo.ScanTicketResponse(qrToken, qrUrl, 120));
+        return ApiResponse.ok(new AuthResponseVo.ScanTicketResponse(qrToken, qrImageBase64, 120));
+    }
+
+    /**
+     * 扫码（移动端扫码）
+     * 移动端扫描二维码后调用此接口，标记二维码为已扫码状态
+     * @param payload 扫码参数
+     * @return 扫码结果
+     */
+    @PostMapping("/scan")
+    public ApiResponse<?> scan(@Valid @RequestBody AuthVo.ScanReq payload) {
+        log.info("移动端扫码, qrToken={}, userId={}", payload.qrToken(), payload.userId());
+        scanLoginService.scanTicket(payload.qrToken(), payload.userId());
+        log.info("移动端扫码成功, qrToken={}, userId={}", payload.qrToken(), payload.userId());
+        return ApiResponse.ok(new AuthResponseVo.ScanResponse(payload.qrToken(), true));
     }
 
     /**
@@ -237,33 +274,70 @@ public class AuthController {
      * 查询扫码登录状态
      * 前端轮询此接口获取扫码登录状态
      * @param qrToken 二维码Token
-     * @return 登录状态和用户信息（已确认时）
+     * @return 登录状态和Token信息（已确认时）
      */
     @GetMapping("/scan-status")
     public ApiResponse<?> scanStatus(@RequestParam String qrToken) {
         log.debug("查询扫码登录状态, qrToken={}", qrToken);
         String status = scanLoginService.getLoginStatus(qrToken);
-        AuthResponseVo.LoginUserInfo userInfo = null;
+        
+        // 如果已确认，调用标准登录流程生成 Token
         if ("CONFIRMED".equals(status)) {
-            String[] userInfoArray = scanLoginService.getUserInfo(qrToken);
-            if (userInfoArray != null && userInfoArray.length >= 3) {
-                userInfo = new AuthResponseVo.LoginUserInfo(
-                        Long.parseLong(userInfoArray[0]),
-                        Long.parseLong(userInfoArray[1]),
-                        userInfoArray[2],
-                        null, // realName
-                        null, // roles
-                        null  // entryType
+            log.info("扫码登录已确认，调用标准登录流程, qrToken={}", qrToken);
+            
+            try {
+                // 使用标准登录流程（包含角色解析、安全校验、Token生成等完整逻辑）
+                // LoginReq 字段顺序: loginType, entryType, tenantCode, username, password, 
+                // phone, smsCode, email, emailCode, qrToken, clientType, rememberTenant, ipAddress, deviceInfo, userAgent
+                // entryType 传 null，让后端根据用户角色自动判断 (SYSTEM/TENANT_ADMIN/EMPLOYEE)
+                AuthVo.LoginReq loginReq = new AuthVo.LoginReq(
+                        "SCAN_CODE",    // loginType
+                        null,           // entryType (让后端根据角色自动判断)
+                        null,           // tenantCode
+                        null,           // username (扫码登录不需要)
+                        null,           // password
+                        null,           // phone
+                        null,           // smsCode
+                        null,           // email
+                        null,           // emailCode
+                        qrToken,        // qrToken
+                        "WEB",          // clientType
+                        null,           // rememberTenant
+                        null,           // ipAddress (后端自动获取)
+                        null,           // deviceInfo (扫码登录不传递)
+                        null            // userAgent (扫码登录不传递)
                 );
-                log.info("扫码登录已确认, qrToken={}, userId={}", qrToken, userInfoArray[0]);
+                
+                // 调用标准登录方法
+                AuthResponseVo.LoginResponse loginResponse = authService.login(loginReq);
+                
+                // 清理扫码数据
+                scanLoginService.cleanup(qrToken);
+                
+                log.info("扫码登录成功, userId={}, username={}", 
+                        loginResponse.userInfo().userId(), 
+                        loginResponse.userInfo().username());
+                
+                return ApiResponse.ok(new AuthResponseVo.ScanStatusResponse(
+                        status,
+                        loginResponse.accessToken(),
+                        loginResponse.refreshToken(),
+                        loginResponse.expiresIn(),
+                        loginResponse.userInfo()
+                ));
+            } catch (Exception e) {
+                log.error("扫码登录失败, qrToken={}", qrToken, e);
+                scanLoginService.cleanup(qrToken);
+                throw e;
             }
         }
+        
         return ApiResponse.ok(new AuthResponseVo.ScanStatusResponse(
                 status,
-                null, // accessToken
-                null, // refreshToken
-                7200, // expiresIn
-                userInfo
+                null,
+                null,
+                7200,
+                null
         ));
     }
 
@@ -322,6 +396,24 @@ public class AuthController {
     }
 
     /**
+     * 验证短信验证码（忘记密码流程）
+     * @param payload 验证请求
+     * @return 验证结果
+     */
+    @PostMapping("/verify-sms-code")
+    public ApiResponse<?> verifySmsCode(@Valid @RequestBody AuthVo.VerifySmsCodeReq payload) {
+        log.info("验证短信验证码, phone={}", payload.phone());
+        try {
+            authService.verifySmsCodeForForgotPassword(payload);
+            log.info("短信验证码验证成功, phone={}", payload.phone());
+            return ApiResponse.ok(new CommonResponses.SuccessResponse(true));
+        } catch (Exception e) {
+            log.error("短信验证码验证失败, phone={}, error={}", payload.phone(), e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
      * 获取用户登录历史记录
      * @param pageNum 页码
      * @param pageSize 每页数量
@@ -361,5 +453,63 @@ public class AuthController {
                 .toList();
         log.info("获取登录历史完成, userId={}, 记录数={}", userId, records.size());
         return ApiResponse.ok(new PageResult<>(records, page.getTotal()));
+    }
+
+    /**
+     * 获取当前用户信息
+     * @return 当前用户信息
+     */
+    @GetMapping("/me")
+    public ApiResponse<?> getCurrentUser() {
+        var me = SecurityUtils.currentUser();
+        log.debug("获取当前用户信息, userId={}", me.userId());
+        AuthResponseVo.UserInfoResult result = authService.getCurrentUser(me.userId());
+        log.info("获取当前用户信息成功, userId={}", result.id());
+        return ApiResponse.ok(result);
+    }
+
+    /**
+     * 更新当前用户信息
+     * @param payload 用户信息
+     * @return 操作结果
+     */
+    @PutMapping("/me")
+    @AuditLog(module = "个人信息", operateType = "UPDATE", bizModule = "user", fieldName = "realName")
+    public ApiResponse<?> updateCurrentUser(@Valid @RequestBody AuthVo.UpdateUserReq payload) {
+        var me = SecurityUtils.currentUser();
+        log.info("更新当前用户信息, userId={}", me.userId());
+        authService.updateCurrentUser(me.userId(), payload);
+        log.info("更新当前用户信息成功, userId={}", me.userId());
+        return ApiResponse.ok("更新成功");
+    }
+
+    /**
+     * 修改密码
+     * @param payload 密码信息
+     * @return 操作结果
+     */
+    @PostMapping("/change-password")
+    @AuditLog(module = "个人信息", operateType = "CHANGE_PASSWORD", bizModule = "user", fieldName = "password")
+    public ApiResponse<?> changePassword(@Valid @RequestBody AuthVo.ChangePasswordReq payload) {
+        var me = SecurityUtils.currentUser();
+        log.info("修改密码请求, userId={}", me.userId());
+        authService.changePassword(me.userId(), payload);
+        log.info("修改密码成功, userId={}", me.userId());
+        return ApiResponse.ok("密码修改成功");
+    }
+
+    /**
+     * 上传头像
+     * @param avatarFile 头像文件
+     * @return OSS路径（已URLEncode编码）
+     */
+    @PostMapping("/avatar/upload")
+    @AuditLog(module = "个人信息", operateType = "UPLOAD_AVATAR", bizModule = "user", fieldName = "avatarUrl")
+    public ApiResponse<String> uploadAvatar(@RequestParam("file") MultipartFile avatarFile) {
+        var me = SecurityUtils.currentUser();
+        log.info("上传头像请求, userId={}", me.userId());
+        String ossPath = userService.updateAvatar(me.userId(), avatarFile);
+        log.info("上传头像成功, userId={}, ossPath={}", me.userId(), ossPath);
+        return ApiResponse.ok(ossPath);
     }
 }

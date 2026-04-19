@@ -32,6 +32,7 @@ public class UserVo {
             @Size(min = ValidationConstants.REAL_NAME_MIN_LENGTH, max = ValidationConstants.REAL_NAME_MAX_LENGTH, 
                   message = "姓名长度为2-30个字符") 
             String realName,
+            @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
             String avatarUrl,
             Long deptId,
             @Pattern(regexp = ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
@@ -42,18 +43,21 @@ public class UserVo {
     }
 
     public record UserUpdateReq(
-            @Size(min = ValidationConstants.USERNAME_MIN_LENGTH, max = ValidationConstants.USERNAME_MAX_LENGTH, 
-                  message = "账号长度为4-12个字符") 
-            @Pattern(regexp = ValidationConstants.USERNAME_REGEX, message = ValidationConstants.USERNAME_MESSAGE) 
+            @Size(max = ValidationConstants.USERNAME_MAX_LENGTH, 
+                  message = "账号长度不能超过12个字符") 
+            @Pattern(regexp = "^$|" + ValidationConstants.USERNAME_REGEX, message = ValidationConstants.USERNAME_MESSAGE) 
             String username,
-            @Size(min = ValidationConstants.REAL_NAME_MIN_LENGTH, max = ValidationConstants.REAL_NAME_MAX_LENGTH, 
-                  message = "姓名长度为2-30个字符") 
+            @Size(max = ValidationConstants.REAL_NAME_MAX_LENGTH, 
+                  message = "姓名长度不能超过30个字符") 
             String realName,
+            @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
             String avatarUrl,
             Long deptId,
-            @Pattern(regexp = ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
+            String position,              // 岗位
+            Long leaderUserId,            // 直属领导用户ID
+            @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
             String phone,
-            @Pattern(regexp = ValidationConstants.EMAIL_REGEX, message = ValidationConstants.EMAIL_MESSAGE) 
+            @Pattern(regexp = "^$|" + ValidationConstants.EMAIL_REGEX, message = ValidationConstants.EMAIL_MESSAGE) 
             String email
     ) {
     }

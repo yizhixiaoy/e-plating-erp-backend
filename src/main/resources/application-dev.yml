@@ -15,3 +15,33 @@ spring:
         enabled: true
         url-pattern: /*
         exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*,/actuator/*,/swagger-ui*,/v3/api-docs*"
+
+# 开发环境OSS配置（默认使用MinIO本地或腾讯云测试环境）
+oss:
+  provider: ${OSS_PROVIDER:minio}
+  
+  # 腾讯云COS（开发测试环境）
+  tencent:
+    secret-id: ${TENCENT_SECRET_ID:}
+    secret-key: ${TENCENT_SECRET_KEY:}
+    region: ${TENCENT_REGION:ap-guangzhou}
+    bucket: ${TENCENT_BUCKET:erp-dev}
+  
+  # 阿里云OSS（开发测试环境）
+  aliyun:
+    endpoint: ${ALIYUN_ENDPOINT:}
+    access-key-id: ${ALIYUN_ACCESS_KEY_ID:}
+    access-key-secret: ${ALIYUN_ACCESS_KEY_SECRET:}
+    bucket: ${ALIYUN_BUCKET:erp-dev}
+  
+  # MinIO（本地开发推荐）
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: ${MINIO_BUCKET:erp-dev}
+    region: ${MINIO_REGION:}
+    domain: ${MINIO_DOMAIN:}
+    connection-timeout: ${MINIO_CONNECTION_TIMEOUT:30000}
+    socket-timeout: ${MINIO_SOCKET_TIMEOUT:30000}
+    secure: ${MINIO_SECURE:false}

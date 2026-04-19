@@ -10,14 +10,21 @@ import com.plating.erp.common.security.AuthzCacheService;
 import com.plating.erp.common.security.CredentialRevocationService;
 import com.plating.erp.common.security.RefreshTokenService;
 import com.plating.erp.common.security.SecurityUtils;
+import com.plating.erp.common.util.StringUtil;
+import com.plating.erp.iam.entity.DeptEntity;
 import com.plating.erp.iam.entity.UserEntity;
+import com.plating.erp.iam.mapper.DeptMapper;
+import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.iam.service.UserService;
+import com.plating.erp.iam.vo.UserListVo;
 import com.plating.erp.iam.vo.UserVo;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 用户管理控制器
@@ -29,15 +36,21 @@ public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userService;
+    private final UserMapper userMapper;
+    private final DeptMapper deptMapper;
     private final AuthzCacheService authzCacheService;
     private final RefreshTokenService refreshTokenService;
     private final CredentialRevocationService credentialRevocationService;
 
     public UserController(UserService userService,
+                          UserMapper userMapper,
+                          DeptMapper deptMapper,
                           AuthzCacheService authzCacheService,
                           RefreshTokenService refreshTokenService,
                           CredentialRevocationService credentialRevocationService) {
         this.userService = userService;
+        this.userMapper = userMapper;
+        this.deptMapper = deptMapper;
         this.authzCacheService = authzCacheService;
         this.refreshTokenService = refreshTokenService;
         this.credentialRevocationService = credentialRevocationService;
@@ -96,8 +109,52 @@ public class UserController {
                 pageNum, pageSize, deptId, status, keyword, tenantId, me.username());
         
         var page = userService.page(pageNum, pageSize, deptId, status, keyword, tenantId, me.isSystem());
+        
+        // 转换为 VO，填充部门名称和领导姓名
+        List<UserListVo> voList = page.records().stream().map(user -> {
+            String deptName = null;
+            if (user.getDeptId() != null) {
+                DeptEntity dept = deptMapper.selectById(user.getDeptId());
+                if (dept != null) {
+                    deptName = dept.getDeptName();
+                }
+            }
+            
+            String leaderName = null;
+            if (user.getLeaderUserId() != null) {
+                UserEntity leader = userMapper.selectById(user.getLeaderUserId());
+                if (leader != null) {
+                    leaderName = leader.getRealName();
+                }
+            }
+            
+            return new UserListVo(
+                    user.getId(),
+                    user.getTenantId(),
+                    user.getUsername(),
+                    user.getRealName(),
+                    user.getAvatarUrl(),
+                    user.getDeptId(),
+                    deptName,
+                    user.getPosition(),
+                    user.getLeaderUserId(),
+                    leaderName,
+                    user.getPhone(),
+                    user.getEmail(),
+                    user.getUserType(),
+                    user.getStatus(),
+                    user.getLastLoginAt(),
+                    user.getLastLoginIp(),
+                    user.getLoginCount(),
+                    user.getCreatedBy(),
+                    user.getCreatedAt(),
+                    user.getUpdatedBy(),
+                    user.getUpdatedAt()
+            );
+        }).toList();
+        
         log.debug("用户列表查询完成, 总数={}", page.total());
-        return ApiResponse.ok(new PageResult<>(page.records(), page.total()));
+        return ApiResponse.ok(new PageResult<>(voList, page.total()));
     }
 
     /**
@@ -140,10 +197,12 @@ public class UserController {
         
         if (body.username() != null) u.setUsername(body.username());
         if (body.realName() != null) u.setRealName(body.realName());
-        if (body.avatarUrl() != null) u.setAvatarUrl(body.avatarUrl());
+        if (body.avatarUrl() != null) u.setAvatarUrl(StringUtil.blankToNull(body.avatarUrl()));
         if (body.deptId() != null) u.setDeptId(body.deptId());
-        if (body.phone() != null) u.setPhone(body.phone());
-        if (body.email() != null) u.setEmail(body.email());
+        if (body.position() != null) u.setPosition(StringUtil.blankToNull(body.position()));
+        if (body.leaderUserId() != null) u.setLeaderUserId(body.leaderUserId());
+        if (body.phone() != null) u.setPhone(StringUtil.blankToNull(body.phone()));
+        if (body.email() != null) u.setEmail(StringUtil.blankToNull(body.email()));
         userService.save(u);
         
         log.info("用户更新成功, userId={}", userId);

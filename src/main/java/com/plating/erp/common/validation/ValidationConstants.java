@@ -88,4 +88,12 @@ public final class ValidationConstants {
     public static final String URL_REGEX = "^https?:\\/\\/.*";
     /** URL正则消息 */
     public static final String URL_MESSAGE = "请输入有效的URL地址";
+    
+    /** 域名最大长度 */
+    public static final int DOMAIN_MAX_LENGTH = 128;
+    
+    /** 域名正则：支持子域名和主域名 */
+    public static final String DOMAIN_REGEX = "^[a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?)*$";
+    /** 域名正则消息 */
+    public static final String DOMAIN_MESSAGE = "域名格式不正确，示例：company.example.com";
 }

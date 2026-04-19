@@ -201,10 +201,15 @@ public class AuditLogAspect {
                 }
                 
                 // 2.3 data是对象，尝试getId方法
-                java.lang.reflect.Method getIdMethod = data.getClass().getMethod("getId");
-                Object idObj = getIdMethod.invoke(data);
-                if (idObj instanceof Number) {
-                    return ((Number) idObj).longValue();
+                try {
+                    java.lang.reflect.Method getIdMethod = data.getClass().getMethod("getId");
+                    Object idObj = getIdMethod.invoke(data);
+                    if (idObj instanceof Number) {
+                        return ((Number) idObj).longValue();
+                    }
+                } catch (NoSuchMethodException e) {
+                    // 没有getId方法，跳过
+                    log.debug("对象没有getId方法: {}", data.getClass().getName());
                 }
             }
             

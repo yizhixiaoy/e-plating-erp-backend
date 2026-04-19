@@ -4,12 +4,13 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
  * 用户实体类
  * 
- * 包含用户基本信息、登录信息、审计信息等
+ * 包含用户基本信息、登录信息、员工信息、审计信息等
  */
 @Data
 @TableName("sys_user")
@@ -22,8 +23,13 @@ public class UserEntity {
     private String realName;
     private String avatarUrl;
     private Long deptId;
+    private String position;          // 岗位/职位
+    private Long leaderUserId;        // 直属领导用户ID
     private String phone;
+    private String officePhone;       // 办公电话
     private String email;
+    private LocalDate joinDate;       // 入职日期
+    private Integer employeeStatus;   // 员工状态:0在职 1离职 2试用期
     private Integer userType;
     private Integer status;
     private LocalDateTime lastLoginAt;

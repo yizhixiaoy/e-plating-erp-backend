@@ -18,7 +18,9 @@ public class AuthVo {
             @Size(max = 128, message = "qrToken长度不能超过128") String qrToken,
             @NotBlank(message = "clientType不能为空") String clientType,
             Boolean rememberTenant,
-            String ipAddress  // 由后端从HTTP请求中自动获取，前端无需传递
+            String ipAddress,  // 由后端从HTTP请求中自动获取，前端无需传递
+            String deviceInfo, // 设备信息（如 Windows NT 10.0、iPhone等）
+            String userAgent   // 浏览器UA
     ) {
     }
 
@@ -38,6 +40,12 @@ public class AuthVo {
 
     public record ScanTicketReq(
             @NotBlank(message = "clientType不能为空") String clientType
+    ) {
+    }
+
+    public record ScanReq(
+            @NotBlank(message = "qrToken不能为空") @Size(max = 128, message = "qrToken长度不能超过128") String qrToken,
+            @NotBlank(message = "userId不能为空") Long userId
     ) {
     }
 
@@ -71,6 +79,27 @@ public class AuthVo {
             @NotBlank(message = "smsCode不能为空") @Size(min = 4, max = 8, message = "验证码长度不合法") String smsCode,
             @NotBlank(message = "newPassword不能为空") @Size(min = 8, max = 64, message = "密码长度需在8-64") String newPassword,
             @Size(max = 16, message = "tenantCode长度不能超过16") String tenantCode
+    ) {
+    }
+
+    public record VerifySmsCodeReq(
+            @NotBlank(message = "phone不能为空") @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,
+            @NotBlank(message = "smsCode不能为空") @Size(min = 4, max = 8, message = "验证码长度不合法") String smsCode,
+            @Size(max = 16, message = "tenantCode长度不能超过16") String tenantCode
+    ) {
+    }
+
+    public record UpdateUserReq(
+            @Size(min = 2, max = 30, message = "realName长度需在2-30") String realName,
+            @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,
+            @Pattern(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$", message = "邮箱格式不正确") String email,
+            String avatarUrl
+    ) {
+    }
+
+    public record ChangePasswordReq(
+            @NotBlank(message = "oldPassword不能为空") String oldPassword,
+            @NotBlank(message = "newPassword不能为空") @Size(min = 8, max = 20, message = "密码长度需在8-20") String newPassword
     ) {
     }
 }

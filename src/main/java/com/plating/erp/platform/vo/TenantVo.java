@@ -21,7 +21,8 @@ public class TenantVo {
             @Size(min = ValidationConstants.TENANT_NAME_MIN_LENGTH, max = ValidationConstants.TENANT_NAME_MAX_LENGTH, 
                   message = "名称长度为2-64个字符") 
             String tenantName,
-            String avatarUrl,
+            @Pattern(regexp = "^$|" + ValidationConstants.URL_REGEX, message = ValidationConstants.URL_MESSAGE) 
+            String logoUrl,              // 企业Logo
             @NotBlank(message = "租户简称不能为空") 
             @Size(min = ValidationConstants.SHORT_CODE_MIN_LENGTH, max = ValidationConstants.SHORT_CODE_MAX_LENGTH, 
                   message = "简称长度为2-16个字符") 
@@ -36,28 +37,37 @@ public class TenantVo {
             String phone,
             @NotNull(message = "到期时间不能为空") 
             LocalDateTime expireTime,
-            @Pattern(regexp = ValidationConstants.URL_REGEX, message = ValidationConstants.URL_MESSAGE) 
-            String domain
+            @Size(max = ValidationConstants.DOMAIN_MAX_LENGTH, 
+                  message = "域名长度不能超过" + ValidationConstants.DOMAIN_MAX_LENGTH + "个字符")
+            @Pattern(regexp = ValidationConstants.DOMAIN_REGEX, message = ValidationConstants.DOMAIN_MESSAGE) 
+            String domain,               // 自定义域名
+            @Size(max = 2000, message = "配置内容不能超过2000字符") 
+            String welcomeText           // 租户自定义配置（JSON）
     ) {
     }
 
     public record TenantUpdateReq(
-            @Size(min = ValidationConstants.TENANT_NAME_MIN_LENGTH, max = ValidationConstants.TENANT_NAME_MAX_LENGTH, 
-                  message = "名称长度为2-64个字符") 
+            @Size(max = ValidationConstants.TENANT_NAME_MAX_LENGTH, 
+                  message = "名称长度不能超过64个字符") 
             String tenantName,
-            String avatarUrl,
-            @Size(min = ValidationConstants.SHORT_CODE_MIN_LENGTH, max = ValidationConstants.SHORT_CODE_MAX_LENGTH, 
-                  message = "简称长度为2-16个字符") 
-            @Pattern(regexp = ValidationConstants.SHORT_CODE_REGEX, message = ValidationConstants.SHORT_CODE_MESSAGE) 
+            @Pattern(regexp = "^$|" + ValidationConstants.URL_REGEX, message = ValidationConstants.URL_MESSAGE) 
+            String logoUrl,              // 企业Logo
+            @Size(max = ValidationConstants.SHORT_CODE_MAX_LENGTH, 
+                  message = "简称长度不能超过16个字符") 
+            @Pattern(regexp = "^$|" + ValidationConstants.SHORT_CODE_REGEX, message = ValidationConstants.SHORT_CODE_MESSAGE) 
             String shortCode,
             @Size(max = ValidationConstants.CONTACT_NAME_MAX_LENGTH, 
-                  message = "联系人长度为2-32个字符") 
+                  message = "联系人长度不能超过32个字符") 
             String contactName,
-            @Pattern(regexp = ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
+            @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
             String phone,
             LocalDateTime expireTime,
-            @Pattern(regexp = ValidationConstants.URL_REGEX, message = ValidationConstants.URL_MESSAGE) 
-            String domain
+            @Size(max = ValidationConstants.DOMAIN_MAX_LENGTH, 
+                  message = "域名长度不能超过" + ValidationConstants.DOMAIN_MAX_LENGTH + "个字符")
+            @Pattern(regexp = "^$|" + ValidationConstants.DOMAIN_REGEX, message = ValidationConstants.DOMAIN_MESSAGE) 
+            String domain,               // 自定义域名
+            @Size(max = 2000, message = "配置内容不能超过2000字符") 
+            String welcomeText           // 租户自定义配置（JSON）
     ) {
     }
 
@@ -66,6 +76,38 @@ public class TenantVo {
             @Min(value = 0, message = "状态只能为0或1") 
             @Max(value = 1, message = "状态只能为0或1") 
             Integer status
+    ) {
+    }
+
+    /**
+     * 公司信息响应
+     */
+    public record CompanyInfoResult(
+            String tenantName,
+            String shortCode,
+            String contactName,
+            String phone
+    ) {
+    }
+
+    /**
+     * 修改公司信息请求
+     */
+    public record UpdateCompanyReq(
+            @Size(max = ValidationConstants.TENANT_NAME_MAX_LENGTH,
+                  message = "名称长度不能超过64个字符")
+            String tenantName,
+            @Size(max = ValidationConstants.SHORT_CODE_MAX_LENGTH,
+                  message = "简称长度不能超过16个字符")
+            @Pattern(regexp = "^$|" + ValidationConstants.SHORT_CODE_REGEX, message = ValidationConstants.SHORT_CODE_MESSAGE)
+            String shortCode,
+            @Size(max = ValidationConstants.CONTACT_NAME_MAX_LENGTH,
+                  message = "联系人长度不能超过32个字符")
+            String contactName,
+            @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE)
+            String phone,
+            @Pattern(regexp = "^$|" + ValidationConstants.URL_REGEX, message = ValidationConstants.URL_MESSAGE)
+            String logoUrl
     ) {
     }
 }

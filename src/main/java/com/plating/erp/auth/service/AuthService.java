@@ -10,6 +10,8 @@ public interface AuthService {
 
     AuthResponseVo.TenantByUsernameResult getTenantByUsername(String username);
 
+    AuthResponseVo.TenantByPhoneResult getTenantByPhone(String phone);
+
     List<AuthResponseVo.RecentTenantResult> getRecentTenants(String auth);
 
     AuthResponseVo.LoginResponse login(AuthVo.LoginReq req);
@@ -21,4 +23,12 @@ public interface AuthService {
     String refreshToken(String refreshToken);
 
     void resetPassword(AuthVo.ResetPasswordReq payload);
+
+    void verifySmsCodeForForgotPassword(AuthVo.VerifySmsCodeReq payload);
+
+    AuthResponseVo.UserInfoResult getCurrentUser(Long userId);
+
+    void updateCurrentUser(Long userId, AuthVo.UpdateUserReq payload);
+
+    void changePassword(Long userId, AuthVo.ChangePasswordReq payload);
 }

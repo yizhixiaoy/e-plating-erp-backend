@@ -5,6 +5,8 @@ import com.plating.erp.iam.entity.UserEntity;
 
 import java.util.List;
 
+import org.springframework.web.multipart.MultipartFile;
+
 public interface UserService {
     UserEntity findByUsernameAndTenantId(String username, Long tenantId);
 
@@ -38,4 +40,12 @@ public interface UserService {
     UserEntity getById(Long userId);
 
     boolean save(UserEntity entity);
+
+    /**
+     * 更新用户头像
+     * @param userId 用户ID
+     * @param avatarFile 头像文件
+     * @return OSS路径（已URLEncode编码）
+     */
+    String updateAvatar(Long userId, MultipartFile avatarFile);
 }

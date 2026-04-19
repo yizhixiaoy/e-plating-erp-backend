@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plating.erp.common.api.response.PageResult;
+import com.plating.erp.common.tenant.TenantContextUtil;
 import com.plating.erp.iam.entity.UserEntity;
 import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.message.entity.EmailRecordEntity;
@@ -149,22 +150,73 @@ public class MessageServiceImpl implements MessageService {
     @Transactional
     @Override
     public int publishDueScheduledNotices() {
-        List<NoticeEntity> due = noticeMapper.selectList(new LambdaQueryWrapper<NoticeEntity>()
-                .eq(NoticeEntity::getStatus, 1)
-                .isNotNull(NoticeEntity::getScheduledPublishAt)
-                .le(NoticeEntity::getScheduledPublishAt, LocalDateTime.now()));
-        int n = 0;
-        for (NoticeEntity found : due) {
-            found.setStatus(2);
-            found.setPublishTime(LocalDateTime.now());
-            found.setPublishedBy(null);
-            found.setScheduledPublishAt(null);
-            found.setOfflineAt(null);
-            noticeMapper.updateById(found);
-            deliverNoticeRecipients(found.getId());
-            n++;
+        // 使用专用方法跳过租户拦截器，查询所有租户的待发布公告
+        List<NoticeEntity> due = noticeMapper.selectDueNoticesIgnoreTenant();
+        
+        if (due.isEmpty()) {
+            return 0;
         }
-        return n;
+        
+        // 按租户分组处理，确保每个租户的公告在正确的租户上下文中发布
+        Map<Long, List<NoticeEntity>> noticesByTenant = due.stream()
+                .collect(Collectors.groupingBy(NoticeEntity::getTenantId));
+        
+        int totalPublished = 0;
+        for (Map.Entry<Long, List<NoticeEntity>> entry : noticesByTenant.entrySet()) {
+            Long tenantId = entry.getKey();
+            List<NoticeEntity> tenantNotices = entry.getValue();
+            
+            log.info("开始处理租户 [{}] 的待发布公告，数量={}", tenantId, tenantNotices.size());
+            
+            // 在租户上下文中处理该租户的所有公告
+            try {
+                totalPublished += processTenantNotices(tenantId, tenantNotices);
+            } catch (Exception e) {
+                log.error("租户 [{}] 公告发布失败", tenantId, e);
+            }
+        }
+        
+        log.info("定时任务完成，共发布 {} 条公告，涉及 {} 个租户", totalPublished, noticesByTenant.size());
+        return totalPublished;
+    }
+    
+    /**
+     * 在指定租户上下文中处理公告发布
+     * 
+     * @param tenantId 租户ID
+     * @param notices 该租户的公告列表
+     * @return 成功发布的公告数量
+     */
+    private int processTenantNotices(Long tenantId, List<NoticeEntity> notices) {
+        // 使用 TenantContextUtil 设置租户上下文
+        return TenantContextUtil.callWithTenant(tenantId, () -> {
+            int successCount = 0;
+            
+            for (NoticeEntity notice : notices) {
+                try {
+                    // 更新公告状态
+                    notice.setStatus(2);
+                    notice.setPublishTime(LocalDateTime.now());
+                    notice.setPublishedBy(null);
+                    notice.setScheduledPublishAt(null);
+                    notice.setOfflineAt(null);
+                    noticeMapper.updateById(notice);
+                    
+                    // 投递给收件人（在租户上下文中执行）
+                    deliverNoticeRecipients(notice.getId());
+                    
+                    successCount++;
+                    log.debug("公告发布成功, noticeId={}, tenantId={}, title={}", 
+                            notice.getId(), tenantId, notice.getTitle());
+                } catch (Exception e) {
+                    log.error("公告发布失败, noticeId={}, tenantId={}, title={}", 
+                            notice.getId(), tenantId, notice.getTitle(), e);
+                    // 单个公告失败不影响其他公告
+                }
+            }
+            
+            return successCount;
+        });
     }
 
     private List<Long> resolveRecipientUserIds(NoticeEntity notice) {

@@ -1,7 +1,15 @@
 package com.plating.erp.auth.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.plating.erp.auth.entity.LoginHistoryEntity;
+import com.plating.erp.auth.entity.UserRecentTenantEntity;
+import com.plating.erp.auth.mapper.LoginHistoryMapper;
+import com.plating.erp.auth.mapper.UserRecentTenantMapper;
 import com.plating.erp.auth.service.AuthService;
+import com.plating.erp.auth.service.LoginSecurityService;
+import com.plating.erp.auth.service.ScanLoginService;
+import com.plating.erp.auth.service.VerificationCodeService;
 import com.plating.erp.auth.vo.AuthResponseVo;
 import com.plating.erp.auth.vo.AuthVo;
 import com.plating.erp.common.api.BizException;
@@ -9,16 +17,13 @@ import com.plating.erp.common.api.ErrorCode;
 import com.plating.erp.common.security.JwtTokenService;
 import com.plating.erp.common.security.PermissionMapper;
 import com.plating.erp.common.security.RefreshTokenService;
-import com.plating.erp.auth.service.LoginSecurityService;
-import com.plating.erp.auth.service.ScanLoginService;
-import com.plating.erp.auth.service.VerificationCodeService;
+import com.plating.erp.iam.entity.DeptEntity;
 import com.plating.erp.iam.entity.UserEntity;
+import com.plating.erp.iam.mapper.DeptMapper;
 import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.iam.service.UserService;
 import com.plating.erp.platform.entity.TenantEntity;
 import com.plating.erp.platform.mapper.TenantMapper;
-import com.plating.erp.auth.mapper.UserRecentTenantMapper;
-import com.plating.erp.auth.entity.UserRecentTenantEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -41,13 +46,16 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
     private final PermissionMapper permissionMapper;
     private final UserRecentTenantMapper userRecentTenantMapper;
+    private final DeptMapper deptMapper;
+    private final LoginHistoryMapper loginHistoryMapper;
 
     public AuthServiceImpl(TenantMapper tenantMapper, UserMapper userMapper,
                            JwtTokenService jwtTokenService,
                            RefreshTokenService refreshTokenService,
                            LoginSecurityService loginSecurityService, ScanLoginService scanLoginService,
                            VerificationCodeService verificationCodeService, UserService userService,
-                           PermissionMapper permissionMapper, UserRecentTenantMapper userRecentTenantMapper) {
+                           PermissionMapper permissionMapper, UserRecentTenantMapper userRecentTenantMapper,
+                           DeptMapper deptMapper, LoginHistoryMapper loginHistoryMapper) {
         this.tenantMapper = tenantMapper;
         this.userMapper = userMapper;
         this.jwtTokenService = jwtTokenService;
@@ -58,6 +66,8 @@ public class AuthServiceImpl implements AuthService {
         this.userService = userService;
         this.permissionMapper = permissionMapper;
         this.userRecentTenantMapper = userRecentTenantMapper;
+        this.deptMapper = deptMapper;
+        this.loginHistoryMapper = loginHistoryMapper;
     }
 
     private List<String> resolveUserRoles(Long userId, Long tenantId, String username) {
@@ -89,7 +99,7 @@ public class AuthServiceImpl implements AuthService {
             result.add(new AuthResponseVo.TenantSearchResult(
                     tenant.getShortCode(),
                     tenant.getTenantName(),
-                    tenant.getAvatarUrl() != null ? tenant.getAvatarUrl() : ""
+                    tenant.getLogoUrl() != null ? tenant.getLogoUrl() : ""
             ));
         }
         return result;
@@ -143,11 +153,80 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponseVo.TenantByUsernameResult(
                 tenant.getShortCode(),
                 tenant.getTenantName(),
-                tenant.getAvatarUrl(),
+                tenant.getLogoUrl(),
                 tenant.getId(),
                 user.getRealName(),
                 user.getPhone(),
                 user.getEmail(),
+                true
+        );
+    }
+
+    @Override
+    public AuthResponseVo.TenantByPhoneResult getTenantByPhone(String phone) {
+        log.debug("开始查询手机号所属租户, phone={}", phone);
+        
+        // 根据手机号查询用户（使用认证专用查询方法，跳过租户拦截器）
+        UserEntity user = userMapper.selectByPhoneForAuth(phone, null);
+        
+        if (user == null) {
+            log.warn("未找到该手机号的用户, phone={}", phone);
+            throw new BizException(ErrorCode.BAD_REQUEST, "该手机号未注册");
+        }
+        
+        // 校验用户状态
+        if (user.getStatus() != null && user.getStatus() != 0) {
+            log.warn("用户已被禁用, userId={}, status={}", user.getId(), user.getStatus());
+            throw new BizException(ErrorCode.BAD_REQUEST, "您的账户已被禁用，请联系管理员");
+        }
+        
+        // 平台用户返回system租户编码
+        boolean isPlatformUser = user.getUserType() != null && user.getUserType() == 0;
+        
+        // 检查用户是否被锁定（通过检查登录尝试次数）
+        try {
+            String tenantCodeForCheck;
+            if (isPlatformUser) {
+                tenantCodeForCheck = "system";
+            } else {
+                TenantEntity tenant = tenantMapper.selectById(user.getTenantId());
+                tenantCodeForCheck = tenant != null ? tenant.getShortCode() : "default";
+            }
+            loginSecurityService.checkLoginAttempt(user.getUsername(), tenantCodeForCheck);
+        } catch (BizException e) {
+            log.warn("用户账户被锁定, userId={}, username={}", user.getId(), user.getUsername());
+            throw e;
+        }
+        
+        if (isPlatformUser) {
+            log.debug("平台用户，返回system租户, phone={}", phone);
+            return new AuthResponseVo.TenantByPhoneResult("system", "平台系统", 1L, true);
+        }
+        
+        log.debug("找到用户, userId={}, tenantId={}", user.getId(), user.getTenantId());
+        
+        // 查询租户信息
+        TenantEntity tenant = tenantMapper.selectById(user.getTenantId());
+        if (tenant == null) {
+            log.warn("用户所属租户不存在, userId={}, tenantId={}", user.getId(), user.getTenantId());
+            throw new BizException(ErrorCode.BAD_REQUEST, "您所属的租户不存在");
+        }
+        
+        if (tenant.getStatus() != 0) {
+            log.warn("用户所属租户已被禁用, tenantId={}, status={}", tenant.getId(), tenant.getStatus());
+            throw new BizException(ErrorCode.BAD_REQUEST, "您所属的租户已被禁用，请联系管理员");
+        }
+        
+        if (tenant.getExpireTime() != null && tenant.getExpireTime().isBefore(java.time.LocalDateTime.now())) {
+            log.warn("用户所属租户已过期, tenantId={}, expireTime={}", tenant.getId(), tenant.getExpireTime());
+            throw new BizException(ErrorCode.BAD_REQUEST, "您所属的租户已过期，请联系管理员续费");
+        }
+        
+        log.info("成功获取手机号所属租户, phone={}, tenantName={}", phone, tenant.getTenantName());
+        return new AuthResponseVo.TenantByPhoneResult(
+                tenant.getShortCode(),
+                tenant.getTenantName(),
+                tenant.getId(),
                 true
         );
     }
@@ -177,7 +256,7 @@ public class AuthServiceImpl implements AuthService {
                 result.add(new AuthResponseVo.RecentTenantResult(
                         tenant.getShortCode(),
                         tenant.getTenantName(),
-                        tenant.getAvatarUrl() != null ? tenant.getAvatarUrl() : "",
+                        tenant.getLogoUrl() != null ? tenant.getLogoUrl() : "",
                         recent.getLastLoginTime()
                 ));
             }
@@ -236,6 +315,8 @@ public class AuthServiceImpl implements AuthService {
             user = userMapper.selectByUsernameForAuth(req.username());
             if (user == null) {
                 log.warn("登录失败，账号不存在, username={}", req.username());
+                // 记录登录失败历史（账号不存在时无法获取userId，使用tenantId代替）
+                recordLoginHistoryFailed(req, "账号不存在");
                 throw new BizException(ErrorCode.UNAUTHORIZED, "账号或密码错误");
             }
             log.debug("找到用户, userId={}, tenantId={}, userType={}", user.getId(), user.getTenantId(), user.getUserType());
@@ -244,29 +325,37 @@ public class AuthServiceImpl implements AuthService {
 
         if (user == null) {
             log.error("用户对象为null，这是不应该发生的情况");
+            recordLoginHistoryFailed(req, "用户对象为空");
             throw new BizException(ErrorCode.BAD_REQUEST, "用户不存在");
         }
 
         // 2. 根据用户类型判断是否需要验证租户状态
         TenantEntity tenant = null;
         boolean isPlatformUser = user.getUserType() != null && user.getUserType() == 0;
+        String companyName = null;
+        String companyLogoUrl = null;
         
         if (user.getTenantId() != null) {
             // sys_tenant 表在白名单中，不受租户拦截器影响
             tenant = tenantMapper.selectById(user.getTenantId());
             if (tenant == null) {
                 log.warn("登录失败，用户所属租户不存在, userId={}, tenantId={}", user.getId(), user.getTenantId());
+                recordLoginHistory(user, tenant, req, false, "租户不存在");
                 throw new BizException(ErrorCode.NOT_FOUND, "用户所属租户不存在");
             }
-            
+
+            companyName = tenant.getTenantName();
+            companyLogoUrl = tenant.getLogoUrl();
             // 租户用户需要验证租户状态
             if (!isPlatformUser) {
                 if (tenant.getStatus() != 0) {
                     log.warn("登录失败，租户已被禁用, tenantCode={}, status={}", tenant.getShortCode(), tenant.getStatus());
+                    recordLoginHistory(user, tenant, req, false, "租户已被禁用");
                     throw new BizException(ErrorCode.TENANT_FROZEN, "租户已被禁用，请联系管理员");
                 }
                 if (tenant.getExpireTime() != null && tenant.getExpireTime().isBefore(LocalDateTime.now())) {
                     log.warn("登录失败，租户已过期, tenantCode={}, expireTime={}", tenant.getShortCode(), tenant.getExpireTime());
+                    recordLoginHistory(user, tenant, req, false, "租户已过期");
                     throw new BizException(ErrorCode.TENANT_EXPIRED, "租户已过期，请联系管理员");
                 }
                 log.debug("租户验证通过, tenantId={}, tenantName={}", tenant.getId(), tenant.getTenantName());
@@ -282,6 +371,7 @@ public class AuthServiceImpl implements AuthService {
         // 4. 检查用户状态
         if (user.getStatus() != null && user.getStatus() == 1) {
             log.warn("登录失败，用户已被禁用, userId={}, username={}", user.getId(), user.getUsername());
+            recordLoginHistory(user, tenant, req, false, "用户已被禁用");
             throw new BizException(ErrorCode.USER_DISABLED, "账号已被禁用，请联系管理员");
         }
 
@@ -293,6 +383,9 @@ public class AuthServiceImpl implements AuthService {
         
         // 5.1 更新用户登录信息（登录次数和最后登录时间）
         updateLoginInfo(user.getId(), req.ipAddress());
+        
+        // 5.2 记录登录历史
+        recordLoginHistory(user, tenant, req, true, null);
         
         log.debug("登录安全检查和历史记录更新完成");
 
@@ -326,7 +419,9 @@ public class AuthServiceImpl implements AuthService {
                         user.getUsername(),
                         user.getRealName(),
                         roles,
-                        entryType
+                        entryType,
+                        companyName,
+                        companyLogoUrl
                 )
         );
     }
@@ -397,6 +492,8 @@ public class AuthServiceImpl implements AuthService {
      */
     private void updateLoginInfo(Long userId, String ipAddress) {
         try {
+            log.info("开始更新用户登录信息, userId={}, ipAddress={}", userId, ipAddress);
+            
             UserEntity user = userMapper.selectByIdForAuth(userId);
             if (user == null) {
                 log.warn("更新登录信息失败，用户不存在, userId={}", userId);
@@ -404,18 +501,85 @@ public class AuthServiceImpl implements AuthService {
             }
             
             LocalDateTime now = LocalDateTime.now();
-            user.setLastLoginAt(now);
-            user.setLoginCount(user.getLoginCount() == null ? 1 : user.getLoginCount() + 1);
-            if (ipAddress != null && !ipAddress.isEmpty()) {
-                user.setLastLoginIp(ipAddress);
-            }
+            Integer oldLoginCount = user.getLoginCount();
+            Integer newLoginCount = oldLoginCount == null ? 1 : oldLoginCount + 1;
             
-            userMapper.updateById(user);
-            log.debug("更新用户登录信息成功, userId={}, loginCount={}, lastLoginAt={}, lastLoginIp={}", 
-                    userId, user.getLoginCount(), user.getLastLoginAt(), user.getLastLoginIp());
+            // 使用专门的更新方法，跳过租户拦截器
+            int updated = userMapper.updateLoginInfo(userId, now, newLoginCount, ipAddress);
+            
+            log.info("更新用户登录信息成功, userId={}, loginCount: {} -> {}, lastLoginAt={}, lastLoginIp={}, 影响行数={}", 
+                    userId, oldLoginCount, newLoginCount, now, ipAddress, updated);
         } catch (Exception e) {
-            log.error("更新用户登录信息失败, userId={}", userId, e);
+            log.error("更新用户登录信息失败, userId={}, ipAddress={}", userId, ipAddress, e);
             // 不抛出异常，登录信息更新失败不影响登录流程
+        }
+    }
+    
+    /**
+     * 记录登录历史
+     * 系统管理员和租户用户都会记录登录历史，tenant_id 字段记录用户所属租户
+     * @param user 用户实体
+     * @param tenant 租户实体（系统管理员为平台租户，租户用户为对应租户）
+     * @param req 登录请求
+     * @param success 是否成功
+     * @param failReason 失败原因
+     */
+    private void recordLoginHistory(UserEntity user, TenantEntity tenant, 
+                                    AuthVo.LoginReq req, boolean success, String failReason) {
+        try {
+            LoginHistoryEntity history = new LoginHistoryEntity();
+            history.setId(IdWorker.getId());
+            // tenant_id: 系统管理员记录平台租户ID，租户用户记录对应租户ID
+            history.setTenantId(user.getTenantId());
+            history.setUserId(user.getId());
+            history.setLoginType(req.loginType());
+            history.setLoginTime(LocalDateTime.now());
+            history.setLoginIp(req.ipAddress());
+            history.setDeviceInfo(req.deviceInfo());
+            history.setUserAgent(req.userAgent());
+            history.setLoginStatus(success ? 1 : 0);
+            history.setFailReason(failReason);
+            history.setCreatedAt(LocalDateTime.now());
+            
+            loginHistoryMapper.insert(history);
+            log.info("登录历史记录成功, userId={}, tenantId={}, loginType={}, status={}", 
+                    user.getId(), user.getTenantId(), req.loginType(), success ? "成功" : "失败");
+        } catch (Exception e) {
+            log.error("登录历史记录失败, userId={}, 异常信息={}", user.getId(), e.getMessage(), e);
+            // 不抛出异常，登录历史记录失败不影响登录流程
+        }
+    }
+    
+    /**
+     * 记录登录失败历史（账号不存在时使用）
+     * 当账号不存在时，无法获取userId，使用username查询tenant_id
+     * @param req 登录请求
+     * @param failReason 失败原因
+     */
+    private void recordLoginHistoryFailed(AuthVo.LoginReq req, String failReason) {
+        try {
+            // 尝试通过username查询tenant_id（使用认证专用方法）
+            UserEntity tempUser = userMapper.selectByUsernameForAuth(req.username());
+            Long tenantId = tempUser != null ? tempUser.getTenantId() : null;
+            
+            LoginHistoryEntity history = new LoginHistoryEntity();
+            history.setId(IdWorker.getId());
+            history.setTenantId(tenantId);
+            history.setUserId(null); // 账号不存在，userId为null
+            history.setLoginType(req.loginType());
+            history.setLoginTime(LocalDateTime.now());
+            history.setLoginIp(req.ipAddress());
+            history.setDeviceInfo(req.deviceInfo());
+            history.setUserAgent(req.userAgent());
+            history.setLoginStatus(0); // 失败
+            history.setFailReason(failReason);
+            history.setCreatedAt(LocalDateTime.now());
+            
+            loginHistoryMapper.insert(history);
+            log.debug("登录失败历史记录成功, username={}, reason={}", req.username(), failReason);
+        } catch (Exception e) {
+            log.error("登录失败历史记录异常, username={}", req.username(), e);
+            // 不抛出异常
         }
     }
 
@@ -494,5 +658,160 @@ public class AuthServiceImpl implements AuthService {
         verificationCodeService.validateCode("sms:code:" + payload.phone() + ":RESET_PASSWORD", payload.smsCode());
 
         userService.updatePassword(user.getId(), payload.newPassword());
+    }
+
+    @Override
+    public void verifySmsCodeForForgotPassword(AuthVo.VerifySmsCodeReq payload) {
+        // 根据手机号查询租户
+        TenantEntity tenant = null;
+        if (payload.tenantCode() != null && !payload.tenantCode().isBlank()) {
+            tenant = tenantMapper.selectOne(
+                    new LambdaQueryWrapper<TenantEntity>()
+                            .eq(TenantEntity::getShortCode, payload.tenantCode())
+                            .eq(TenantEntity::getStatus, 0)
+            );
+        } else {
+            // 根据手机号查询租户
+            List<TenantEntity> tenants = tenantMapper.selectList(
+                    new LambdaQueryWrapper<TenantEntity>()
+                            .eq(TenantEntity::getStatus, 0)
+            );
+            for (TenantEntity t : tenants) {
+                UserEntity u = userMapper.selectByPhoneForAuth(payload.phone(), t.getId());
+                if (u != null) {
+                    tenant = t;
+                    break;
+                }
+            }
+        }
+        
+        if (tenant == null) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "该手机号未绑定任何租户");
+        }
+
+        // 验证用户是否存在
+        UserEntity user = userMapper.selectByPhoneForAuth(payload.phone(), tenant.getId());
+        if (user == null) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "用户不存在");
+        }
+
+        // 验证短信验证码
+        verificationCodeService.validateCode("sms:code:" + payload.phone() + ":RESET_PASSWORD", payload.smsCode());
+    }
+
+    @Override
+    public AuthResponseVo.UserInfoResult getCurrentUser(Long userId) {
+        UserEntity user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "用户不存在");
+        }
+
+        // 获取用户权限（菜单权限标识）
+        List<String> permissions = permissionMapper.selectPerms(userId, user.getTenantId());
+
+        // 获取租户信息（公司信息）
+        String companyName = null;
+        String companyShortCode = null;
+        String companyContact = null;
+        String companyPhone = null;
+        String companyLogoUrl = null;
+        
+        if (user.getTenantId() != null) {
+            TenantEntity tenant = tenantMapper.selectById(user.getTenantId());
+            if (tenant != null) {
+                companyName = tenant.getTenantName();
+                companyShortCode = tenant.getShortCode();
+                companyContact = tenant.getContactName();
+                companyPhone = tenant.getPhone();
+                companyLogoUrl = tenant.getLogoUrl();
+            }
+        }
+
+        // 获取部门信息
+        String deptName = null;
+        if (user.getDeptId() != null) {
+            DeptEntity dept = deptMapper.selectById(user.getDeptId());
+            if (dept != null) {
+                deptName = dept.getDeptName();
+            }
+        }
+
+        // 获取直属领导信息
+        String leaderName = null;
+        if (user.getLeaderUserId() != null) {
+            UserEntity leader = userMapper.selectById(user.getLeaderUserId());
+            if (leader != null) {
+                leaderName = leader.getRealName();
+            }
+        }
+
+        // 格式化最后登录时间
+        String lastLoginAt = user.getLastLoginAt() != null 
+            ? user.getLastLoginAt().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+            : null;
+
+        return new AuthResponseVo.UserInfoResult(
+                user.getId(),
+                user.getUsername(),
+                user.getRealName(),
+                user.getPhone(),
+                user.getEmail(),
+                user.getAvatarUrl(),
+                user.getTenantId(),
+                user.getUserType(),
+                permissions,
+                companyName,
+                companyShortCode,
+                companyContact,
+                companyPhone,
+                companyLogoUrl,
+                deptName,
+                user.getPosition(),
+                user.getLeaderUserId(),
+                leaderName,
+                lastLoginAt
+        );
+    }
+
+    @Override
+    public void updateCurrentUser(Long userId, AuthVo.UpdateUserReq payload) {
+        UserEntity user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "用户不存在");
+        }
+
+        // 更新用户信息
+        if (payload.realName() != null) {
+            user.setRealName(payload.realName());
+        }
+        if (payload.phone() != null) {
+            user.setPhone(payload.phone());
+        }
+        if (payload.email() != null) {
+            user.setEmail(payload.email());
+        }
+        if (payload.avatarUrl() != null) {
+            user.setAvatarUrl(payload.avatarUrl());
+        }
+
+        userMapper.updateById(user);
+        log.info("用户信息更新成功, userId={}", userId);
+    }
+
+    @Override
+    public void changePassword(Long userId, AuthVo.ChangePasswordReq payload) {
+        UserEntity user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "用户不存在");
+        }
+
+        // 验证旧密码 - 使用 UserService 的统一方法
+        if (!userService.checkPassword(payload.oldPassword(), user.getPasswordHash())) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "当前密码错误");
+        }
+
+        // 更新密码 - 使用 UserService 的统一方法
+        userService.updatePassword(userId, payload.newPassword());
+        log.info("用户密码修改成功, userId={}", userId);
     }
 }
