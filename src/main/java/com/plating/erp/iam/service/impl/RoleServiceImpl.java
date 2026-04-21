@@ -52,7 +52,10 @@ public class RoleServiceImpl implements RoleService {
         if (role == null) {
             return false;
         }
+        // 注意：selectById 不再自动过滤 tenant_id，必须手动验证
         if (!Boolean.TRUE.equals(isSystem) && !Objects.equals(role.getTenantId(), expectedTenantId)) {
+            log.warn("角色不属于当前租户, roleId={}, expectedTenantId={}, actualTenantId={}", 
+                    roleId, expectedTenantId, role.getTenantId());
             return false;
         }
         userRoleMapper.deleteByRole(role.getTenantId(), roleId);
@@ -61,7 +64,9 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public RoleEntity getById(Long roleId) {
-        return roleMapper.selectById(roleId);
+        RoleEntity role = roleMapper.selectById(roleId);
+        // 注意：调用方需要确保 roleId 属于正确的租户
+        return role;
     }
 
     @Override

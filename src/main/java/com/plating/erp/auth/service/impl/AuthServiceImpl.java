@@ -73,7 +73,7 @@ public class AuthServiceImpl implements AuthService {
     private List<String> resolveUserRoles(Long userId, Long tenantId, String username) {
         List<String> roles = permissionMapper.selectRoleKeys(userId, tenantId);
         if (roles == null || roles.isEmpty()) {
-            roles = "system".equalsIgnoreCase(username) ? List.of("system") : List.of("TENANT_ADMIN");
+            roles = "system".equalsIgnoreCase(username) ? List.of("PLATFORM_ADMIN") : List.of("TENANT_ADMIN");
         }
         return roles;
     }
@@ -421,7 +421,8 @@ public class AuthServiceImpl implements AuthService {
                         roles,
                         entryType,
                         companyName,
-                        companyLogoUrl
+                        companyLogoUrl,
+                        tenant != null ? tenant.getWelcomeText() : null
                 )
         );
     }

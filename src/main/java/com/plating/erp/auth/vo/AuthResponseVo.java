@@ -13,7 +13,9 @@ public class AuthResponseVo {
             String entryType,
             // 公司信息
             String companyName,
-            String companyLogoUrl
+            String companyLogoUrl,
+            // 欢迎语配置
+            String welcomeText
     ) {
     }
 

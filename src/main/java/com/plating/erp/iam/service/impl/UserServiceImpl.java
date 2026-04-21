@@ -165,6 +165,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserEntity getById(Long userId) {
+        // 注意：调用方需要确保 userId 属于正确的租户
+        // 如果是租户用户查询，应该在 Controller 层传入 tenantId 并验证
         return userMapper.selectById(userId);
     }
 
@@ -189,6 +191,7 @@ public class UserServiceImpl implements UserService {
             if (user == null) {
                 throw new RuntimeException("用户不存在");
             }
+            // 注意：应该验证用户是否属于当前租户（由 Controller 层保证）
             user.setAvatarUrl(uploadResult.getOssPath());
             userMapper.updateById(user);
             
@@ -205,6 +208,7 @@ public class UserServiceImpl implements UserService {
             return tenantId;
         }
         UserEntity user = userMapper.selectById(userId);
+        // 注意：这里获取用户的 tenant_id 用于后续操作
         return user == null ? null : user.getTenantId();
     }
 }

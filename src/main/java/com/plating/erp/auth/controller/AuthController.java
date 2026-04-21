@@ -17,15 +17,23 @@ import com.plating.erp.common.security.JwtTokenService;
 import com.plating.erp.common.security.RefreshTokenService;
 import com.plating.erp.common.security.SecurityUtils;
 import com.plating.erp.common.util.IpUtils;
+import com.plating.erp.iam.service.MenuService;
 import com.plating.erp.iam.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 认证控制器
@@ -43,11 +51,12 @@ public class AuthController {
     private final ScanLoginService scanLoginService;
     private final LoginSecurityService loginSecurityService;
     private final UserService userService;
+    private final MenuService menuService;
 
     public AuthController(AuthService authService, JwtTokenService jwtTokenService,
                          RefreshTokenService refreshTokenService, LoginHistoryMapper loginHistoryMapper,
                          ScanLoginService scanLoginService, LoginSecurityService loginSecurityService,
-                         UserService userService) {
+                         UserService userService, MenuService menuService) {
         this.authService = authService;
         this.jwtTokenService = jwtTokenService;
         this.refreshTokenService = refreshTokenService;
@@ -55,6 +64,7 @@ public class AuthController {
         this.scanLoginService = scanLoginService;
         this.loginSecurityService = loginSecurityService;
         this.userService = userService;
+        this.menuService = menuService;
     }
 
     /**
@@ -511,5 +521,22 @@ public class AuthController {
         String ossPath = userService.updateAvatar(me.userId(), avatarFile);
         log.info("上传头像成功, userId={}, ossPath={}", me.userId(), ossPath);
         return ApiResponse.ok(ossPath);
+    }
+
+    /**
+     * 获取用户动态路由和权限
+     * 根据用户角色返回对应的菜单树和权限标识:
+     * - 系统管理员: 返回所有平台级菜单 + 全部权限
+     * - 租户管理员: 返回平台级 + 租户级菜单 + 本公司全部权限
+     * - 普通员工: 返回角色关联的菜单 + 个人权限
+     * 
+     * @return 路由树和权限列表
+     */
+    @GetMapping("/routes")
+    public ApiResponse<Map<String, Object>> getUserRoutes() {
+
+        // 获取用户路由和权限
+        Map<String, Object> result = menuService.getUserRoutesAndPermissions();
+        return ApiResponse.ok(result);
     }
 }

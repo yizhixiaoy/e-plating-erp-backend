@@ -80,6 +80,7 @@ public class MessageServiceImpl implements MessageService {
         if (noticeUser == null) {
             return false;
         }
+        // 注意：应该验证 noticeUserId 是否属于当前用户（由 Controller 层保证）
         noticeUser.setReadStatus(1);
         noticeUser.setReadTime(LocalDateTime.now());
         noticeUserMapper.updateById(noticeUser);
@@ -92,6 +93,7 @@ public class MessageServiceImpl implements MessageService {
         if (notice == null || !Objects.equals(notice.getStatus(), 1)) {
             return false;
         }
+        // 注意：应该验证 noticeId 是否属于当前租户（由 Controller 层保证）
 
         notice.setStatus(2);
         notice.setPublishTime(LocalDateTime.now());

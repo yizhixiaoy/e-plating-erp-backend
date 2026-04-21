@@ -69,8 +69,7 @@ public class UserController {
         log.info("创建用户请求, operator={}, username={}, tenantId={}", me.userId(), body.username(), me.tenantId());
         
         UserEntity entity = new UserEntity();
-        long tid = body.tenantId() == null ? 1L : body.tenantId();
-        entity.setTenantId(me.isSystem() ? tid : me.tenantId());
+        entity.setTenantId(me.isSystem() ? 1L : me.tenantId());
         entity.setUsername(body.username() == null ? "a-00001" : body.username());
         entity.setPasswordHash(body.password() == null ? "123456" : body.password());
         entity.setRealName(body.realName() == null ? "新用户" : body.realName());
