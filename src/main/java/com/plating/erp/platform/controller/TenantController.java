@@ -11,6 +11,7 @@ import com.plating.erp.platform.entity.TenantEntity;
 import com.plating.erp.platform.service.TenantService;
 import com.plating.erp.platform.vo.TenantListVo;
 import com.plating.erp.platform.vo.TenantVo;
+import com.plating.erp.platform.vo.TenantOptionsVo;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,24 @@ public class TenantController {
         entity.setWelcomeText(body.welcomeText() == null ? "" : body.welcomeText());
         tenantService.save(entity);
         return ApiResponse.ok(tenantService.getById(entity.getId()));
+    }
+
+    @GetMapping("/options")
+    @PreAuthorize("@authz.hasPerm('user:add')")
+    public ApiResponse<List<TenantOptionsVo>> options() {
+        var user = SecurityUtils.currentUser();
+        List<TenantOptionsVo> options;
+        if (user.isSystem()) {
+            // 平台管理员可看到所有租户
+            options = tenantService.listAll().stream()
+                    .map(t -> new TenantOptionsVo(t.getId(), t.getTenantName(), t.getShortCode()))
+                    .toList();
+        } else {
+            // 租户用户只看到自己租户
+            TenantEntity t = tenantService.getById(user.tenantId());
+            options = t == null ? List.of() : List.of(new TenantOptionsVo(t.getId(), t.getTenantName(), t.getShortCode()));
+        }
+        return ApiResponse.ok(options);
     }
 
     @GetMapping

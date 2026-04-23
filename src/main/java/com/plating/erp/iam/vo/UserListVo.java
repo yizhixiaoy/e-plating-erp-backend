@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 public record UserListVo(
         Long id,
         Long tenantId,
+        String companyName,
+        String shortName,
         String username,
         String realName,
         String avatarUrl,

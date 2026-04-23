@@ -2,10 +2,9 @@ package com.plating.erp.iam.service;
 
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.iam.entity.UserEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-
-import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
     UserEntity findByUsernameAndTenantId(String username, Long tenantId);
@@ -25,13 +24,12 @@ public interface UserService {
      * @param pageSize 每页条数
      * @param deptId 部门ID
      * @param status 状态
-     * @param keyword 关键字（姓名/账号/手机号）
+     * @param keyword 关键字（支持姓名、账号、手机号、租户名称模糊查询）
      * @param tenantId 租户ID（平台管理员使用）
-     * @param isSystem 是否平台管理员
-     * @return 分页结果
+     * @return 分页结果（记录包含 tenantName 租户名称）
      */
     PageResult<UserEntity> page(int pageNum, int pageSize, Long deptId, Integer status, 
-                                String keyword, Long tenantId, Boolean isSystem);
+                                String keyword, Long tenantId);
 
     int bindRoles(Long tenantId, Long userId, List<Long> roleIds);
 
@@ -48,4 +46,12 @@ public interface UserService {
      * @return OSS路径（已URLEncode编码）
      */
     String updateAvatar(Long userId, MultipartFile avatarFile);
+
+    /**
+     * 根据租户ID生成下一个可用账号
+     * 规则：租户简称 + "-" + 4位序号，如 ZD-0001
+     * @param tenantId 租户ID
+     * @return 生成的账号
+     */
+    String generateUsername(Long tenantId);
 }

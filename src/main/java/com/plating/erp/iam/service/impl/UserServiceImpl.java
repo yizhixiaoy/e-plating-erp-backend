@@ -1,7 +1,7 @@
 package com.plating.erp.iam.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.common.security.AuthzCacheService;
@@ -12,6 +12,8 @@ import com.plating.erp.iam.entity.UserRoleEntity;
 import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.iam.mapper.UserRoleMapper;
 import com.plating.erp.iam.service.UserService;
+import com.plating.erp.platform.entity.TenantEntity;
+import com.plating.erp.platform.service.TenantService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,13 +31,16 @@ public class UserServiceImpl implements UserService {
     private final UserRoleMapper userRoleMapper;
     private final AuthzCacheService authzCacheService;
     private final PasswordEncoder passwordEncoder;
+    private final TenantService tenantService;
 
     public UserServiceImpl(UserMapper userMapper, UserRoleMapper userRoleMapper,
-                           AuthzCacheService authzCacheService, PasswordEncoder passwordEncoder) {
+                           AuthzCacheService authzCacheService, PasswordEncoder passwordEncoder,
+                           TenantService tenantService) {
         this.userMapper = userMapper;
         this.userRoleMapper = userRoleMapper;
         this.authzCacheService = authzCacheService;
         this.passwordEncoder = passwordEncoder;
+        this.tenantService = tenantService;
     }
 
     @Override
@@ -83,45 +88,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public PageResult<UserEntity> page(int pageNum, int pageSize, Long deptId, Integer status, 
-                                       String keyword, Long tenantId, Boolean isSystem) {
-        LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<>();
-        
-        // 租户隔离：非平台用户只能查看本租户数据
-        if (!Boolean.TRUE.equals(isSystem)) {
-            wrapper.eq(UserEntity::getTenantId, tenantId);
-        } else if (tenantId != null) {
-            // 平台管理员可以指定租户ID查询
-            wrapper.eq(UserEntity::getTenantId, tenantId);
-        }
-        
-        // 部门筛选
-        if (deptId != null) {
-            wrapper.eq(UserEntity::getDeptId, deptId);
-        }
-        
-        // 状态筛选
-        if (status != null) {
-            wrapper.eq(UserEntity::getStatus, status);
-        }
-        
-        // 关键字模糊查询（姓名、账号、手机号）
-        if (keyword != null && !keyword.isEmpty()) {
-            wrapper.and(w -> w
-                    .like(UserEntity::getRealName, keyword)
-                    .or()
-                    .like(UserEntity::getUsername, keyword)
-                    .or()
-                    .like(UserEntity::getPhone, keyword)
-            );
-        }
-        
-        // 按更新时间降序排序
-        wrapper.orderByDesc(UserEntity::getUpdatedAt);
-
-        Page<UserEntity> page = userMapper.selectPage(
+    public PageResult<UserEntity> page(int pageNum, int pageSize, Long deptId, Integer status,
+                                       String keyword, Long tenantId) {
+        IPage<UserEntity> page = userMapper.selectPageWithTenantName(
                 new Page<>(pageNum, pageSize),
-                wrapper
+                tenantId,
+                deptId,
+                status,
+                keyword
         );
 
         return new PageResult<>(page.getRecords(), page.getTotal());
@@ -138,7 +112,6 @@ public class UserServiceImpl implements UserService {
         int count = 0;
         for (Long roleId : roleIds) {
             UserRoleEntity rel = new UserRoleEntity();
-            rel.setId(IdWorker.getId());
             rel.setTenantId(resolvedTenantId);
             rel.setUserId(userId);
             rel.setRoleId(roleId);
@@ -175,9 +148,6 @@ public class UserServiceImpl implements UserService {
         if (entity.getPasswordHash() != null && !entity.getPasswordHash().startsWith("$2a$")) {
             entity.setPasswordHash(passwordEncoder.encode(entity.getPasswordHash()));
         }
-        if (entity.getId() == null) {
-            entity.setId(IdWorker.getId());
-        }
         return userMapper.insertOrUpdate(entity);
     }
 
@@ -210,5 +180,37 @@ public class UserServiceImpl implements UserService {
         UserEntity user = userMapper.selectById(userId);
         // 注意：这里获取用户的 tenant_id 用于后续操作
         return user == null ? null : user.getTenantId();
+    }
+
+    @Override
+    public String generateUsername(Long tenantId) {
+        if (tenantId == null) {
+            return "USR-0001";
+        }
+        TenantEntity tenant = tenantService.getById(tenantId);
+        String prefix = (tenant != null && tenant.getShortCode() != null && !tenant.getShortCode().isEmpty())
+                ? tenant.getShortCode().toUpperCase()
+                : "USR";
+
+        // 查询该租户下已有的最大同前缀账号
+        LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<UserEntity>()
+                .eq(UserEntity::getTenantId, tenantId)
+                .likeRight(UserEntity::getUsername, prefix + "-")
+                .orderByDesc(UserEntity::getUsername)
+                .last("LIMIT 1");
+        UserEntity lastUser = userMapper.selectOne(wrapper);
+
+        int nextSeq = 1;
+        if (lastUser != null && lastUser.getUsername() != null) {
+            try {
+                String seqPart = lastUser.getUsername().substring(prefix.length() + 1);
+                nextSeq = Integer.parseInt(seqPart) + 1;
+            } catch (NumberFormatException e) {
+                // 如果解析失败，从1开始
+                nextSeq = 1;
+            }
+        }
+
+        return String.format("%s-%04d", prefix, nextSeq);
     }
 }

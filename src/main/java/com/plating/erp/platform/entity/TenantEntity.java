@@ -1,5 +1,6 @@
 package com.plating.erp.platform.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("sys_tenant")
 public class TenantEntity {
-    @TableId
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private String tenantName;        // 租户名称
     private String logoUrl;           // 企业Logo URL（品牌标识）

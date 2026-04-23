@@ -74,4 +74,20 @@ public interface UserMapper extends BaseMapper<UserEntity> {
                         @Param("lastLoginAt") LocalDateTime lastLoginAt,
                         @Param("loginCount") Integer loginCount,
                         @Param("lastLoginIp") String lastLoginIp);
+    
+    /**
+     * 分页查询用户（支持租户名称模糊查询）
+     * 
+     * @param page 分页对象
+     * @param tenantId 租户ID（非平台用户必传）
+     * @param deptId 部门ID（可选）
+     * @param status 状态（可选）
+     * @param keyword 关键字（支持姓名、账号、手机号、租户名称模糊查询）
+     * @return 分页结果
+     */
+    IPage<UserEntity> selectPageWithTenantName(Page<UserEntity> page,
+                                               @Param("tenantId") Long tenantId,
+                                               @Param("deptId") Long deptId,
+                                               @Param("status") Integer status,
+                                               @Param("keyword") String keyword);
 }

@@ -352,17 +352,9 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public NoticeEntity saveNotice(NoticeEntity entity, Long userId) {
         if (entity.getId() == null) {
-            entity.setId(com.baomidou.mybatisplus.core.toolkit.IdWorker.getId());
-        }
-        entity.setUpdatedBy(userId);
-        if (entity.getCreatedAt() == null) {
-            entity.setCreatedAt(LocalDateTime.now());
-        }
-        entity.setUpdatedAt(LocalDateTime.now());
-        if (noticeMapper.selectById(entity.getId()) != null) {
-            noticeMapper.updateById(entity);
-        } else {
             noticeMapper.insert(entity);
+        } else {
+            noticeMapper.updateById(entity);
         }
         return entity;
     }
@@ -390,7 +382,6 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public void sendSystemMessage(String title, String content, List<Long> userIds) {
         NoticeEntity notice = new NoticeEntity();
-        notice.setId(com.baomidou.mybatisplus.core.toolkit.IdWorker.getId());
         notice.setTenantId(0L);
         notice.setTitle(title);
         notice.setContent(content);

@@ -1,7 +1,6 @@
 package com.plating.erp.auth.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.plating.erp.auth.entity.LoginHistoryEntity;
 import com.plating.erp.auth.entity.UserRecentTenantEntity;
 import com.plating.erp.auth.mapper.LoginHistoryMapper;
@@ -529,7 +528,6 @@ public class AuthServiceImpl implements AuthService {
                                     AuthVo.LoginReq req, boolean success, String failReason) {
         try {
             LoginHistoryEntity history = new LoginHistoryEntity();
-            history.setId(IdWorker.getId());
             // tenant_id: 系统管理员记录平台租户ID，租户用户记录对应租户ID
             history.setTenantId(user.getTenantId());
             history.setUserId(user.getId());
@@ -564,7 +562,6 @@ public class AuthServiceImpl implements AuthService {
             Long tenantId = tempUser != null ? tempUser.getTenantId() : null;
             
             LoginHistoryEntity history = new LoginHistoryEntity();
-            history.setId(IdWorker.getId());
             history.setTenantId(tenantId);
             history.setUserId(null); // 账号不存在，userId为null
             history.setLoginType(req.loginType());

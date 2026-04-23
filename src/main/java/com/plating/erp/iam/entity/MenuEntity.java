@@ -1,5 +1,6 @@
 package com.plating.erp.iam.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @TableName("sys_menu")
 public class MenuEntity {
     
-    @TableId
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     
     /** 父菜单ID */

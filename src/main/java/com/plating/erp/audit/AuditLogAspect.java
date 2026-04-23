@@ -1,6 +1,5 @@
 package com.plating.erp.audit;
 
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.plating.erp.audit.annotation.AuditLog;
 import com.plating.erp.audit.entity.BizLogEntity;
 import com.plating.erp.audit.entity.OperLogEntity;
@@ -83,7 +82,6 @@ public class AuditLogAspect {
             String methodName = signature.getDeclaringType().getSimpleName() + "." + signature.getName();
             
             OperLogEntity oper = new OperLogEntity();
-            oper.setId(IdWorker.getId());
             oper.setTenantId(user != null ? user.tenantId() : 1L);
             oper.setModuleTitle(auditLog.module());
             oper.setOperateType(auditLog.operateType());
@@ -120,7 +118,6 @@ public class AuditLogAspect {
         
         try {
             BizLogEntity biz = new BizLogEntity();
-            biz.setId(IdWorker.getId());
             biz.setTenantId(user != null ? user.tenantId() : 1L);
             biz.setBizModule(auditLog.bizModule());
             biz.setBizId(bizId != null ? bizId : 0L);

@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class TenantServiceImpl implements TenantService {
     private static final Logger log = LoggerFactory.getLogger(TenantServiceImpl.class);
@@ -65,5 +67,14 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public boolean save(TenantEntity entity) {
         return tenantMapper.insertOrUpdate(entity);
+    }
+
+    @Override
+    public List<TenantEntity> listAll() {
+        return tenantMapper.selectList(
+                new LambdaQueryWrapper<TenantEntity>()
+                        .eq(TenantEntity::getStatus, 0)
+                        .orderByDesc(TenantEntity::getId)
+        );
     }
 }

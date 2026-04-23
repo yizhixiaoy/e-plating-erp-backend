@@ -17,16 +17,8 @@ import java.util.List;
  */
 public class UserVo {
     public record UserCreateReq(
-            @NotNull(message = "租户ID不能为空") Long tenantId,
-            @NotBlank(message = "账号不能为空") 
-            @Size(min = ValidationConstants.USERNAME_MIN_LENGTH, max = ValidationConstants.USERNAME_MAX_LENGTH, 
-                  message = "账号长度为4-12个字符") 
-            @Pattern(regexp = ValidationConstants.USERNAME_REGEX, message = ValidationConstants.USERNAME_MESSAGE) 
+            Long tenantId,
             String username,
-            @NotBlank(message = "密码不能为空") 
-            @Size(min = ValidationConstants.PASSWORD_MIN_LENGTH, max = ValidationConstants.PASSWORD_MAX_LENGTH, 
-                  message = "密码长度为8-20个字符") 
-            @Pattern(regexp = ValidationConstants.PASSWORD_REGEX, message = ValidationConstants.PASSWORD_MESSAGE) 
             String password,
             @NotBlank(message = "姓名不能为空") 
             @Size(min = ValidationConstants.REAL_NAME_MIN_LENGTH, max = ValidationConstants.REAL_NAME_MAX_LENGTH, 
@@ -35,9 +27,11 @@ public class UserVo {
             @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
             String avatarUrl,
             Long deptId,
-            @Pattern(regexp = ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
+            String position,
+            Long leaderUserId,
+            @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
             String phone,
-            @Pattern(regexp = ValidationConstants.EMAIL_REGEX, message = ValidationConstants.EMAIL_MESSAGE) 
+            @Pattern(regexp = "^$|" + ValidationConstants.EMAIL_REGEX, message = ValidationConstants.EMAIL_MESSAGE) 
             String email
     ) {
     }

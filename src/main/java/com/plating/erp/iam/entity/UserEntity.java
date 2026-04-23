@@ -1,5 +1,7 @@
 package com.plating.erp.iam.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -15,7 +17,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("sys_user")
 public class UserEntity {
-    @TableId
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private Long tenantId;
     private String username;
@@ -37,6 +39,12 @@ public class UserEntity {
     private Integer loginCount;
     private String wechatOpenid;
     private String dingtalkUserid;
+    
+    // 关联字段（非数据库字段）
+    @TableField(exist = false)
+    private String tenantName;        // 租户名称（联表查询填充）
+    @TableField(exist = false)
+    private String shortName;
     
     // 审计字段
     private Long createdBy;
