@@ -3,6 +3,8 @@ package com.plating.erp.iam.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.plating.erp.common.api.BizException;
+import com.plating.erp.common.api.ErrorCode;
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.common.security.AuthzCacheService;
 import com.plating.erp.common.util.FileUploadUtils;
@@ -63,8 +65,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserEntity findByPhone(String phone, Long tenantId) {
-        return userMapper.selectOne(
+    public List<UserEntity> findByPhone(String phone, Long tenantId) {
+        // 注意：自 V4 起手机号不再唯一，同公司可有多人共用手机号；
+        // 此方法用 selectOne 仅适合手机号仍恰好唯一的场景，否则会抛 TooManyResultsException
+        return userMapper.selectList(
                 new LambdaQueryWrapper<UserEntity>()
                         .eq(UserEntity::getPhone, phone)
                         .eq(UserEntity::getTenantId, tenantId)
@@ -99,6 +103,19 @@ public class UserServiceImpl implements UserService {
         );
 
         return new PageResult<>(page.getRecords(), page.getTotal());
+    }
+
+    @Override
+    public List<UserEntity> searchUsers(String keyword, Long tenantId, int limit) {
+        return userMapper.selectList(
+                new LambdaQueryWrapper<UserEntity>()
+                        .eq(UserEntity::getTenantId, tenantId)
+                        .eq(UserEntity::getStatus, 0)
+                        .and(w -> w.like(UserEntity::getRealName, keyword)
+                                   .or().like(UserEntity::getUsername, keyword)
+                                   .or().like(UserEntity::getPhone, keyword))
+                        .last("LIMIT " + limit)
+        );
     }
 
     @Transactional
@@ -159,17 +176,17 @@ public class UserServiceImpl implements UserService {
             
             UserEntity user = userMapper.selectById(userId);
             if (user == null) {
-                throw new RuntimeException("用户不存在");
+                throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
             }
             // 注意：应该验证用户是否属于当前租户（由 Controller 层保证）
             user.setAvatarUrl(uploadResult.getOssPath());
             userMapper.updateById(user);
             
             log.info("用户头像更新成功: userId={}, ossPath={}", userId, uploadResult.getOssPath());
-            return uploadResult.getOssPath();
+            return FileUploadUtils.getResourceUrl(uploadResult.getOssPath(), "avatar.jpg");
         } catch (Exception e) {
             log.error("用户头像更新失败: userId={}", userId, e);
-            throw new RuntimeException("头像上传失败: " + e.getMessage());
+            throw new BizException(ErrorCode.INTERNAL_ERROR, "头像上传失败: " + e.getMessage());
         }
     }
 
@@ -180,6 +197,15 @@ public class UserServiceImpl implements UserService {
         UserEntity user = userMapper.selectById(userId);
         // 注意：这里获取用户的 tenant_id 用于后续操作
         return user == null ? null : user.getTenantId();
+    }
+
+    @Override
+    public List<UserRoleEntity> getUserRoles(Long tenantId, Long userId) {
+        return userRoleMapper.selectList(
+                new LambdaQueryWrapper<UserRoleEntity>()
+                        .eq(UserRoleEntity::getTenantId, tenantId)
+                        .eq(UserRoleEntity::getUserId, userId)
+        );
     }
 
     @Override
@@ -207,7 +233,6 @@ public class UserServiceImpl implements UserService {
                 nextSeq = Integer.parseInt(seqPart) + 1;
             } catch (NumberFormatException e) {
                 // 如果解析失败，从1开始
-                nextSeq = 1;
             }
         }
 

@@ -20,6 +20,7 @@ public record UserListVo(
         String position,           // 岗位
         Long leaderUserId,
         String leaderName,         // 直属领导姓名
+        String leaderUsername,     // 直属领导工号
         String phone,
         String email,
         Integer userType,
@@ -28,8 +29,10 @@ public record UserListVo(
         String lastLoginIp,
         Integer loginCount,
         Long createdBy,
+        String createdByName,      // 创建人姓名
         LocalDateTime createdAt,
         Long updatedBy,
+        String updatedByName,      // 更新人姓名
         LocalDateTime updatedAt
 ) {
 }

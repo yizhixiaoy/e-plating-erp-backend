@@ -98,6 +98,12 @@
             <artifactId>jjwt-api</artifactId>
             <version>${jjwt.version}</version>
         </dependency>
+        <!-- Pinyin4j 拼音转换库（中文姓名首字母提取） -->
+        <dependency>
+            <groupId>com.belerweb</groupId>
+            <artifactId>pinyin4j</artifactId>
+            <version>2.5.1</version>
+        </dependency>
         <!-- ZXing 二维码生成库 -->
         <dependency>
             <groupId>com.google.zxing</groupId>

@@ -16,6 +16,7 @@ import com.plating.erp.common.api.ErrorCode;
 import com.plating.erp.common.security.JwtTokenService;
 import com.plating.erp.common.security.PermissionMapper;
 import com.plating.erp.common.security.RefreshTokenService;
+import com.plating.erp.common.util.FileUploadUtils;
 import com.plating.erp.iam.entity.DeptEntity;
 import com.plating.erp.iam.entity.UserEntity;
 import com.plating.erp.iam.mapper.DeptMapper;
@@ -69,10 +70,11 @@ public class AuthServiceImpl implements AuthService {
         this.loginHistoryMapper = loginHistoryMapper;
     }
 
-    private List<String> resolveUserRoles(Long userId, Long tenantId, String username) {
+    private List<String> resolveUserRoles(Long userId, Long tenantId, Integer userType) {
         List<String> roles = permissionMapper.selectRoleKeys(userId, tenantId);
         if (roles == null || roles.isEmpty()) {
-            roles = "system".equalsIgnoreCase(username) ? List.of("PLATFORM_ADMIN") : List.of("TENANT_ADMIN");
+            // 根据用户类型分配默认角色，而非硬编码用户名
+            roles = (userType != null && userType == 0) ? List.of("PLATFORM_ADMIN") : List.of("TENANT_ADMIN");
         }
         return roles;
     }
@@ -98,7 +100,7 @@ public class AuthServiceImpl implements AuthService {
             result.add(new AuthResponseVo.TenantSearchResult(
                     tenant.getShortCode(),
                     tenant.getTenantName(),
-                    tenant.getLogoUrl() != null ? tenant.getLogoUrl() : ""
+                    FileUploadUtils.getResourceUrl(tenant.getLogoUrl(), "logo.png")
             ));
         }
         return result;
@@ -152,7 +154,7 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponseVo.TenantByUsernameResult(
                 tenant.getShortCode(),
                 tenant.getTenantName(),
-                tenant.getLogoUrl(),
+                FileUploadUtils.getResourceUrl(tenant.getLogoUrl(), "logo.png"),
                 tenant.getId(),
                 user.getRealName(),
                 user.getPhone(),
@@ -255,7 +257,7 @@ public class AuthServiceImpl implements AuthService {
                 result.add(new AuthResponseVo.RecentTenantResult(
                         tenant.getShortCode(),
                         tenant.getTenantName(),
-                        tenant.getLogoUrl() != null ? tenant.getLogoUrl() : "",
+                        FileUploadUtils.getResourceUrl(tenant.getLogoUrl(), "logo.png"),
                         recent.getLastLoginTime()
                 ));
             }
@@ -390,7 +392,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 6. 生成令牌
         Long tenantId = user.getTenantId();
-        List<String> roles = resolveUserRoles(user.getId(), tenantId, user.getUsername());
+        List<String> roles = resolveUserRoles(user.getId(), tenantId, user.getUserType());
         String accessToken = jwtTokenService.createToken(user.getId(), tenantId, user.getUsername(), roles, user.getUserType());
         String refreshToken = refreshTokenService.create(user.getId(), tenantId);
         
@@ -400,8 +402,9 @@ public class AuthServiceImpl implements AuthService {
             if (isPlatformUser) {
                 entryType = "SYSTEM";
             } else {
-                // 根据角色判断是租户管理员还是普通员工
-                entryType = roles.contains("TENANT_ADMIN") ? "TENANT_ADMIN" : "EMPLOYEE";
+                // 根据用户类型判断入口类型（userType=0为平台用户，已在上方处理）
+                // 租户用户统一为 TENANT_ADMIN，具体权限由角色菜单控制
+                entryType = "TENANT_ADMIN";
             }
         }
         
@@ -417,10 +420,12 @@ public class AuthServiceImpl implements AuthService {
                         tenantId,
                         user.getUsername(),
                         user.getRealName(),
+                        user.getAvatarUrl(),
                         roles,
                         entryType,
+                        user.getUserType(),
                         companyName,
-                        companyLogoUrl,
+                        FileUploadUtils.getResourceUrl(companyLogoUrl, "logo.png"),
                         tenant != null ? tenant.getWelcomeText() : null
                 )
         );
@@ -628,7 +633,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 生成新的AccessToken
-        List<String> roles = resolveUserRoles(user.getId(), tenantId, user.getUsername());
+        List<String> roles = resolveUserRoles(user.getId(), tenantId, user.getUserType());
         String newAccessToken = jwtTokenService.createToken(user.getId(), tenantId, user.getUsername(), roles, user.getUserType());
         
         log.info("Token刷新成功, userId={}, username={}", userId, user.getUsername());
@@ -754,7 +759,7 @@ public class AuthServiceImpl implements AuthService {
                 user.getRealName(),
                 user.getPhone(),
                 user.getEmail(),
-                user.getAvatarUrl(),
+                FileUploadUtils.getResourceUrl(user.getAvatarUrl(), "avatar.jpg"),
                 user.getTenantId(),
                 user.getUserType(),
                 permissions,
@@ -762,7 +767,7 @@ public class AuthServiceImpl implements AuthService {
                 companyShortCode,
                 companyContact,
                 companyPhone,
-                companyLogoUrl,
+                FileUploadUtils.getResourceUrl(companyLogoUrl, "logo.png"),
                 deptName,
                 user.getPosition(),
                 user.getLeaderUserId(),

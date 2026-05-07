@@ -51,6 +51,12 @@ public final class ValidationConstants {
     public static final int ROLE_KEY_MIN_LENGTH = 1;
     /** 角色权限字符最大长度 */
     public static final int ROLE_KEY_MAX_LENGTH = 64;
+
+    /** 部门名称最大长度 */
+    public static final int DEPT_NAME_MAX_LENGTH = 64;
+
+    /** 岗位名称最大长度 */
+    public static final int POSITION_NAME_MAX_LENGTH = 50;
     
     // ==================== 正则表达式常量 ====================
     

@@ -37,6 +37,8 @@ public class TenantServiceImpl implements TenantService {
                     .or()
                     .like(TenantEntity::getTenantName, keyword)
                     .or()
+                    .like(TenantEntity::getContactName, keyword)
+                    .or()
                     .like(TenantEntity::getPhone, keyword)
             );
         }

@@ -65,21 +65,21 @@ app:
 # OSS存储配置
 # provider: tencent(默认) / aliyun / minio
 oss:
-  provider: ${OSS_PROVIDER:tencent}
+  provider: ${OSS_PROVIDER:aliyun}
   
   # 腾讯云COS
   tencent:
-    secret-id: ${TENCENT_SECRET_ID:}
-    secret-key: ${TENCENT_SECRET_KEY:}
-    region: ${TENCENT_REGION:ap-guangzhou}
-    bucket: ${TENCENT_BUCKET:}
-  
+    secret-id: ${TENCENT_SECRET_ID:AKIDQhkurZ1FG2ZlnbDdpoaDdpmW4OTJwMek}
+    secret-key: ${TENCENT_SECRET_KEY:ub5LVUpyueEbsxoMjtqa6MNApHVUGpAH}
+    region: ${TENCENT_REGION:ap-beijing}
+    bucket: ${TENCENT_BUCKET:e-plating-erp-1387505692}
+
   # 阿里云OSS
   aliyun:
-    endpoint: ${ALIYUN_ENDPOINT:}
-    access-key-id: ${ALIYUN_ACCESS_KEY_ID:}
-    access-key-secret: ${ALIYUN_ACCESS_KEY_SECRET:}
-    bucket: ${ALIYUN_BUCKET:}
+    endpoint: ${ALIYUN_ENDPOINT:oss-cn-hangzhou.aliyuncs.com}
+    access-key-id: ${ALIYUN_ACCESS_KEY_ID:LTAI5t7VXr4wR8qNy62CMbKN}
+    access-key-secret: ${ALIYUN_ACCESS_KEY_SECRET:wKc77oBvljOqYOuUjV83wAm8qZ6XLC}
+    bucket: ${ALIYUN_BUCKET:e-plating-erp}
   
   # MinIO
   minio:

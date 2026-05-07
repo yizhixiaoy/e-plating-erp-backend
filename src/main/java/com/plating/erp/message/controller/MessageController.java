@@ -130,7 +130,7 @@ public class MessageController {
 
     @PostMapping("/notices/{noticeId}/schedule")
     @PreAuthorize("@authz.hasPerm('message:publish')")
-    @AuditLog(module = "消息中心", operateType = "SCHEDULE", bizModule = "notice", fieldName = "scheduled_publish_at")
+    @AuditLog(module = "消息中心", operateType = "SCHEDULE", bizModule = "notice", fieldName = "scheduledPublishAt")
     public ApiResponse<NoticeEntity> schedule(@PathVariable Long noticeId, @Valid @RequestBody MessageVo.NoticeScheduleReq body) {
         NoticeEntity found = requireNotice(noticeId);
         assertNoticeAccess(found);
@@ -195,7 +195,7 @@ public class MessageController {
 
     @PatchMapping("/notices/{noticeId}/read")
     @PreAuthorize("isAuthenticated()")
-    @AuditLog(module = "消息中心", operateType = "READ", bizModule = "notice", fieldName = "read_status")
+    @AuditLog(module = "消息中心", operateType = "READ", bizModule = "notice", fieldName = "readStatus")
     public ApiResponse<CommonResponses.ReadStatusResponse> read(@PathVariable Long noticeId) {
         messageService.readNotice(noticeId, SecurityUtils.currentUser().userId());
         return ApiResponse.ok(new CommonResponses.ReadStatusResponse(noticeId, 1));

@@ -2,7 +2,6 @@ package com.plating.erp.iam.service;
 
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.iam.entity.UserEntity;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -11,7 +10,7 @@ public interface UserService {
 
     UserEntity findByUsername(String username, Long tenantId);
 
-    UserEntity findByPhone(String phone, Long tenantId);
+    List<UserEntity> findByPhone(String phone, Long tenantId);
 
     boolean checkPassword(String rawPassword, String encodedPassword);
 
@@ -31,6 +30,12 @@ public interface UserService {
     PageResult<UserEntity> page(int pageNum, int pageSize, Long deptId, Integer status, 
                                 String keyword, Long tenantId);
 
+    /**
+     * 远程搜索用户（按姓名/工号/手机号模糊匹配，仅返回在职用户）
+     * 用于部门/岗位的负责人选择器
+     */
+    List<UserEntity> searchUsers(String keyword, Long tenantId, int limit);
+
     int bindRoles(Long tenantId, Long userId, List<Long> roleIds);
 
     boolean unbindRole(Long tenantId, Long userId, Long roleId);
@@ -39,19 +44,12 @@ public interface UserService {
 
     boolean save(UserEntity entity);
 
-    /**
-     * 更新用户头像
-     * @param userId 用户ID
-     * @param avatarFile 头像文件
-     * @return OSS路径（已URLEncode编码）
-     */
-    String updateAvatar(Long userId, MultipartFile avatarFile);
+    String updateAvatar(Long userId, org.springframework.web.multipart.MultipartFile avatarFile);
+
+    String generateUsername(Long tenantId);
 
     /**
-     * 根据租户ID生成下一个可用账号
-     * 规则：租户简称 + "-" + 4位序号，如 ZD-0001
-     * @param tenantId 租户ID
-     * @return 生成的账号
+     * 获取用户绑定的角色列表
      */
-    String generateUsername(Long tenantId);
+    List<com.plating.erp.iam.entity.UserRoleEntity> getUserRoles(Long tenantId, Long userId);
 }

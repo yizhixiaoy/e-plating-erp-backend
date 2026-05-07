@@ -33,48 +33,31 @@ public class MenuServiceImpl implements MenuService {
     
     /**
      * 获取用户的完整菜单树和权限
-     * 根据用户角色返回对应的菜单:
-     * - 系统管理员(roleKey=PLATFORM_ADMIN): 返回所有平台级菜单
-     * - 租户管理员(roleKey=TENANT_ADMIN): 返回平台级+租户级菜单
-     * - 普通员工(roleKey=EMPLOYEE): 返回角色关联的菜单
-     * 
+     * 根据用户类型返回对应的菜单:
+     * - 平台管理员(userType=0): 返回所有菜单（平台级+租户级）
+     * - 租户用户(userType=1): 根据角色关联的菜单动态返回
+     *
      * @return 菜单和权限数据
      */
     public Map<String, Object> getUserRoutesAndPermissions() {
         List<MenuEntity> menus;
         List<String> permissions;
         CurrentUser user = SecurityUtils.currentUser();
-        log.info("获取用户菜单和权限, userId={}, tenantId={}, roles={}", 
-            user.userId(), user.tenantId(), user.roles());
-        // 判断用户角色类型
-        boolean isSystemAdmin = user.roles().contains("PLATFORM_ADMIN");
-        boolean isTenantAdmin = user.roles().contains("TENANT_ADMIN");
+        log.info("获取用户菜单和权限, userId={}, tenantId={}, userType={}, roles={}",
+            user.userId(), user.tenantId(), user.userType(), user.roles());
         
-        if (isSystemAdmin) {
-            // 系统管理员（tenant_id=1）：获取所有菜单（平台级+租户级）
-            log.info("系统管理员获取全部菜单, userId={}", user.userId());
+        if (user.isSystem()) {
+            // 平台管理员(userType=0)：获取所有菜单（平台级+租户级）
+            log.info("平台管理员获取全部菜单, userId={}", user.userId());
             menus = menuMapper.selectAllMenus();
             permissions = menus.stream()
                 .filter(m -> "F".equals(m.getMenuType()) && m.getPerms() != null)
                 .map(MenuEntity::getPerms)
                 .distinct()
                 .collect(Collectors.toList());
-        } else if (isTenantAdmin) {
-            // 租户管理员：获取租户级菜单
-            log.info("租户管理员获取租户菜单, userId={}, tenantId={}", user.userId(), user.tenantId());
-            List<MenuEntity> platformMenus = menuMapper.selectMenuTreeByUserId(user.userId());
-//            List<MenuEntity> tenantMenus = menuMapper.selectTenantMenus(user.tenantId());
-            menus = new ArrayList<>(platformMenus);
-//            menus.addAll(tenantMenus);
-            
-            permissions = menus.stream()
-                .filter(m -> "F".equals(m.getMenuType()) && m.getPerms() != null)
-                .map(MenuEntity::getPerms)
-                .distinct()
-                .collect(Collectors.toList());
         } else {
-            // 普通员工：根据角色关联获取菜单
-            log.info("普通员工获取角色菜单, userId={}", user.userId());
+            // 租户用户：根据角色关联获取菜单（角色菜单通过 sys_role_menu 动态分配）
+            log.info("租户用户获取角色菜单, userId={}, tenantId={}", user.userId(), user.tenantId());
             menus = menuMapper.selectMenuTreeByUserId(user.userId());
             permissions = menuMapper.selectPermsByUserId(user.userId());
         }
@@ -188,5 +171,57 @@ public class MenuServiceImpl implements MenuService {
     public void deleteMenu(Long id) {
         menuMapper.deleteById(id);
         log.info("菜单删除成功, menuId={}", id);
+    }
+
+    /**
+     * 获取菜单树（用于角色菜单分配等管理场景）
+     * 返回树形结构，包含 id、label、children、menuType、perms 等字段
+     * 平台管理员获取全部菜单，租户用户获取当前租户的菜单
+     */
+    @Override
+    public List<Map<String, Object>> getMenuTree() {
+        CurrentUser user = SecurityUtils.currentUser();
+        List<MenuEntity> menus;
+        if (user.isSystem()) {
+            menus = menuMapper.selectAllMenus();
+        } else {
+            menus = menuMapper.selectTenantMenus(user.tenantId());
+        }
+        return buildMenuTreeForAssign(menus);
+    }
+
+    /**
+     * 构建菜单树（用于菜单分配场景，包含按钮类型）
+     */
+    private List<Map<String, Object>> buildMenuTreeForAssign(List<MenuEntity> menus) {
+        Map<Long, List<MenuEntity>> parentMap = menus.stream()
+            .collect(Collectors.groupingBy(MenuEntity::getParentId));
+
+        List<MenuEntity> rootMenus = parentMap.getOrDefault(0L, Collections.emptyList());
+        return rootMenus.stream()
+            .map(menu -> convertToAssignNode(menu, parentMap))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 将菜单实体转换为分配用的树节点
+     */
+    private Map<String, Object> convertToAssignNode(MenuEntity menu, Map<Long, List<MenuEntity>> parentMap) {
+        Map<String, Object> node = new HashMap<>();
+        node.put("id", menu.getId());
+        node.put("label", menu.getMenuName());
+        node.put("menuType", menu.getMenuType());
+        node.put("perms", menu.getPerms());
+        node.put("parentId", menu.getParentId());
+
+        List<MenuEntity> children = parentMap.getOrDefault(menu.getId(), Collections.emptyList());
+        if (!children.isEmpty()) {
+            List<Map<String, Object>> childNodes = children.stream()
+                .map(child -> convertToAssignNode(child, parentMap))
+                .collect(Collectors.toList());
+            node.put("children", childNodes);
+        }
+
+        return node;
     }
 }

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -28,12 +29,33 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public PageResult<RoleEntity> page(int pageNum, int pageSize, Integer status, Long tenantId, Boolean isSystem) {
+        return page(pageNum, pageSize, status, tenantId, isSystem, null, null, null);
+    }
+
+    @Override
+    public PageResult<RoleEntity> page(int pageNum, int pageSize, Integer status, Long tenantId, Boolean isSystem,
+                                       Long filterTenantId, Long filterDeptId, String keyword) {
         LambdaQueryWrapper<RoleEntity> wrapper = new LambdaQueryWrapper<>();
-        if (!Boolean.TRUE.equals(isSystem)) {
+        // 平台管理员可按指定租户过滤，非平台管理员只能看自己公司的
+        if (Boolean.TRUE.equals(isSystem)) {
+            if (filterTenantId != null) {
+                wrapper.eq(RoleEntity::getTenantId, filterTenantId);
+            }
+        } else {
             wrapper.eq(RoleEntity::getTenantId, tenantId);
         }
         if (status != null) {
             wrapper.eq(RoleEntity::getStatus, status);
+        }
+        if (filterDeptId != null) {
+            wrapper.eq(RoleEntity::getDeptId, filterDeptId);
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            wrapper.and(w -> w
+                    .like(RoleEntity::getRoleName, keyword)
+                    .or()
+                    .like(RoleEntity::getRoleKey, keyword)
+            );
         }
         wrapper.orderByDesc(RoleEntity::getId);
 
@@ -45,6 +67,20 @@ public class RoleServiceImpl implements RoleService {
         return new PageResult<>(page.getRecords(), page.getTotal());
     }
 
+    @Override
+    public List<RoleEntity> listByTenantAndDept(Long tenantId, Boolean isSystem, Long deptId) {
+        LambdaQueryWrapper<RoleEntity> wrapper = new LambdaQueryWrapper<>();
+        if (!Boolean.TRUE.equals(isSystem) && tenantId != null) {
+            wrapper.eq(RoleEntity::getTenantId, tenantId);
+        }
+        if (deptId != null && deptId > 0) {
+            wrapper.eq(RoleEntity::getDeptId, deptId);
+        }
+        wrapper.eq(RoleEntity::getStatus, 0)
+               .orderByDesc(RoleEntity::getId);
+        return roleMapper.selectList(wrapper);
+    }
+
     @Transactional
     @Override
     public boolean delete(Long roleId, Long expectedTenantId, Boolean isSystem) {
@@ -52,21 +88,21 @@ public class RoleServiceImpl implements RoleService {
         if (role == null) {
             return false;
         }
-        // 注意：selectById 不再自动过滤 tenant_id，必须手动验证
         if (!Boolean.TRUE.equals(isSystem) && !Objects.equals(role.getTenantId(), expectedTenantId)) {
-            log.warn("角色不属于当前租户, roleId={}, expectedTenantId={}, actualTenantId={}", 
+            log.warn("角色不属于当前租户, roleId={}, expectedTenantId={}, actualTenantId={}",
                     roleId, expectedTenantId, role.getTenantId());
             return false;
         }
+        // 删除角色与用户的关联
         userRoleMapper.deleteByRole(role.getTenantId(), roleId);
-        return roleMapper.deleteById(roleId) > 0;
+        // 删除角色本身
+        roleMapper.deleteById(roleId);
+        return true;
     }
 
     @Override
     public RoleEntity getById(Long roleId) {
-        RoleEntity role = roleMapper.selectById(roleId);
-        // 注意：调用方需要确保 roleId 属于正确的租户
-        return role;
+        return roleMapper.selectById(roleId);
     }
 
     @Override

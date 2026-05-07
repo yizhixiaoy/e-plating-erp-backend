@@ -9,8 +9,10 @@ public class AuthResponseVo {
             Long tenantId,
             String username,
             String realName,
+            String avatarUrl,
             List<String> roles,
             String entryType,
+            Integer userType,
             // 公司信息
             String companyName,
             String companyLogoUrl,

@@ -18,6 +18,7 @@ import java.util.List;
 public class RoleVo {
     public record RoleCreateReq(
             @NotNull(message = "租户ID不能为空") Long tenantId,
+            Long deptId,
             @NotBlank(message = "角色名称不能为空") 
             @Size(min = ValidationConstants.ROLE_NAME_MIN_LENGTH, max = ValidationConstants.ROLE_NAME_MAX_LENGTH, 
                   message = "角色名称长度为2-32个字符") 
@@ -36,6 +37,7 @@ public class RoleVo {
 
     public record RoleUpdateReq(
             Long tenantId,
+            Long deptId,
             @Size(max = ValidationConstants.ROLE_NAME_MAX_LENGTH, 
                   message = "角色名称长度不能超过32个字符") 
             String roleName,

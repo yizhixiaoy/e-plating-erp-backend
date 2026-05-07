@@ -24,7 +24,6 @@ public class UserVo {
             @Size(min = ValidationConstants.REAL_NAME_MIN_LENGTH, max = ValidationConstants.REAL_NAME_MAX_LENGTH, 
                   message = "姓名长度为2-30个字符") 
             String realName,
-            @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
             String avatarUrl,
             Long deptId,
             String position,
@@ -32,7 +31,8 @@ public class UserVo {
             @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
             String phone,
             @Pattern(regexp = "^$|" + ValidationConstants.EMAIL_REGEX, message = ValidationConstants.EMAIL_MESSAGE) 
-            String email
+            String email,
+            List<Long> roleIds
     ) {
     }
 
@@ -44,15 +44,16 @@ public class UserVo {
             @Size(max = ValidationConstants.REAL_NAME_MAX_LENGTH, 
                   message = "姓名长度不能超过30个字符") 
             String realName,
-            @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
+            String password,
             String avatarUrl,
             Long deptId,
             String position,              // 岗位
             Long leaderUserId,            // 直属领导用户ID
-            @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
+            @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE)
             String phone,
             @Pattern(regexp = "^$|" + ValidationConstants.EMAIL_REGEX, message = ValidationConstants.EMAIL_MESSAGE) 
-            String email
+            String email,
+            List<Long> roleIds
     ) {
     }
 

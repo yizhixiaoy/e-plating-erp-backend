@@ -2,6 +2,7 @@ package com.plating.erp.common.api;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -61,6 +62,54 @@ public class GlobalExceptionHandler {
             log.warn("业务异常, code={}, message={}", ex.getCode(), ex.getMessage());
         }
         return new ApiResponse<>(ex.getCode(), ex.getMessage(), null, "trace-" + System.currentTimeMillis(), System.currentTimeMillis());
+    }
+
+    /**
+     * 处理数据库唯一键冲突异常
+     * 将数据库层的DuplicateKeyException翻译为友好的用户提示
+     * @param ex 唯一键冲突异常
+     * @return 包含友好错误信息的API响应
+     */
+    @ExceptionHandler(DuplicateKeyException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public ApiResponse<?> handleDuplicateKey(DuplicateKeyException ex) {
+        log.warn("数据重复异常, message={}", ex.getMessage());
+        String msg = friendlyDuplicateMessage(ex.getMessage());
+        return new ApiResponse<>(ErrorCode.CONFLICT.code(), msg, null, "trace-" + System.currentTimeMillis(), System.currentTimeMillis());
+    }
+
+    /**
+     * 根据MySQL唯一键约束名映射友好提示
+     */
+    private String friendlyDuplicateMessage(String errorMsg) {
+        if (errorMsg == null) {
+            return "数据已存在，请勿重复添加";
+        }
+        if (errorMsg.contains("uk_tenant_dept_position")) {
+            return "该部门下已存在同名岗位，请勿重复添加";
+        }
+        if (errorMsg.contains("uk_tenant_name")) {
+            return "该公司名称已存在，请勿重复添加";
+        }
+        if (errorMsg.contains("uk_tenant_username")) {
+            return "该用户名已存在，请勿重复添加";
+        }
+        if (errorMsg.contains("uk_tenant_parent_name")) {
+            return "该部门名称已存在，请勿重复添加";
+        }
+        if (errorMsg.contains("uk_tenant_role_name")) {
+            return "该角色名称已存在，请勿重复添加";
+        }
+        if (errorMsg.contains("uk_short_code")) {
+            return "该公司简称已存在，请勿重复添加";
+        }
+        if (errorMsg.contains("uk_phone") && errorMsg.contains("tenant")) {
+            return "该公司联系电话已存在，请勿重复添加";
+        }
+        if (errorMsg.contains("uk_tenant_realname_phone")) {
+            return "该公司已存在同名同手机号的用户，请勿重复添加";
+        }
+        return "数据已存在，请勿重复添加";
     }
 
     /**

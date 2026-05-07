@@ -10,9 +10,11 @@ import com.plating.erp.common.security.AuthzCacheService;
 import com.plating.erp.common.security.CredentialRevocationService;
 import com.plating.erp.common.security.RefreshTokenService;
 import com.plating.erp.common.security.SecurityUtils;
+import com.plating.erp.common.util.FileUploadUtils;
 import com.plating.erp.common.util.StringUtil;
 import com.plating.erp.iam.entity.DeptEntity;
 import com.plating.erp.iam.entity.UserEntity;
+import com.plating.erp.iam.entity.UserRoleEntity;
 import com.plating.erp.iam.mapper.DeptMapper;
 import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.iam.service.UserService;
@@ -34,7 +36,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import net.sourceforge.pinyin4j.PinyinHelper;
+import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
+import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
+
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 用户管理控制器
@@ -84,6 +92,35 @@ public class UserController {
     }
 
     /**
+     * 远程搜索用户（按姓名/工号/手机号模糊匹配）
+     * 用于部门/岗位的负责人选择器，仅返回在职用户
+     * @param keyword  搜索关键词（姓名/工号/手机号）
+     * @param tenantId 租户ID
+     * @param limit    返回数量上限（默认20）
+     */
+    @GetMapping("/search")
+    @PreAuthorize("@authz.hasPerm('dept:add') or @authz.hasPerm('dept:edit') or @authz.hasPerm('position:add') or @authz.hasPerm('position:edit') or @authz.hasPerm('user:add') or @authz.hasPerm('user:edit')")
+    public ApiResponse<List<java.util.Map<String, Object>>> search(
+            @RequestParam String keyword,
+            @RequestParam Long tenantId,
+            @RequestParam(defaultValue = "20") int limit) {
+        var me = SecurityUtils.currentUser();
+        Long queryTenantId = me.isSystem() ? tenantId : me.tenantId();
+        if (queryTenantId == null || keyword == null || keyword.isBlank()) {
+            return ApiResponse.ok(List.of());
+        }
+        List<UserEntity> users = userService.searchUsers(keyword, queryTenantId, Math.min(limit, 50));
+        List<java.util.Map<String, Object>> result = users.stream().map(u -> {
+            java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("id", u.getId());
+            m.put("realName", u.getRealName());
+            m.put("username", u.getUsername());
+            return m;
+        }).toList();
+        return ApiResponse.ok(result);
+    }
+
+    /**
      * 创建用户
      *
      * @param body 用户创建请求
@@ -107,9 +144,10 @@ public class UserController {
         entity.setUsername(body.username() == null || body.username().isBlank()
                 ? userService.generateUsername(entity.getTenantId())
                 : body.username());
-        entity.setPasswordHash(body.password() == null ? "123456" : body.password());
-        entity.setRealName(body.realName() == null ? "新用户" : body.realName());
-        entity.setAvatarUrl(body.avatarUrl() == null ? "" : body.avatarUrl());
+        String realName = body.realName();
+        entity.setRealName(realName);
+        entity.setPasswordHash(body.password() == null ? generateDefaultPassword(realName) : body.password());
+        entity.setAvatarUrl(FileUploadUtils.extractOssPath(body.avatarUrl() == null ? "" : body.avatarUrl()));
         entity.setDeptId(body.deptId());
         entity.setPosition(body.position() == null ? "" : body.position());
         entity.setLeaderUserId(body.leaderUserId());
@@ -117,10 +155,23 @@ public class UserController {
         entity.setEmail(body.email() == null ? "" : body.email());
         entity.setUserType(1);
         entity.setStatus(0);
+        entity.setCreatedBy(me.userId());
+        entity.setUpdatedBy(me.userId());
         userService.save(entity);
 
         log.info("用户创建成功, userId={}, username={}", entity.getId(), entity.getUsername());
-        return ApiResponse.ok(userService.getById(entity.getId()));
+
+        // 创建后绑定角色
+        if (body.roleIds() != null && !body.roleIds().isEmpty()) {
+            userService.bindRoles(entity.getTenantId(), entity.getId(), body.roleIds());
+            log.info("用户角色绑定成功, userId={}, roleIds={}", entity.getId(), body.roleIds());
+        }
+
+        UserEntity result = userService.getById(entity.getId());
+        if (result != null && result.getAvatarUrl() != null && !result.getAvatarUrl().isEmpty()) {
+            result.setAvatarUrl(FileUploadUtils.getResourceUrl(result.getAvatarUrl(), "avatar.jpg"));
+        }
+        return ApiResponse.ok(result);
     }
 
     /**
@@ -150,20 +201,26 @@ public class UserController {
                 me.isSystem() ? tenantId : me.tenantId());
 
         // 转换为 VO，填充部门名称和领导姓名
+        // 批量查询创建人/更新人/领导姓名
+        List<Long> userIds = page.records().stream()
+                .flatMap(user -> java.util.stream.Stream.of(
+                        user.getCreatedBy(), user.getUpdatedBy(), user.getLeaderUserId()))
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+        List<UserEntity> relatedUsers = userIds.isEmpty() ? List.of() :
+                userMapper.selectBatchIds(userIds);
+        Map<Long, String> userNameMap = relatedUsers.stream()
+                .collect(Collectors.toMap(UserEntity::getId, UserEntity::getRealName, (a, b) -> a));
+        Map<Long, String> userUsernameMap = relatedUsers.stream()
+                .collect(Collectors.toMap(UserEntity::getId, UserEntity::getUsername, (a, b) -> a));
+
         List<UserListVo> voList = page.records().stream().map(user -> {
             String deptName = null;
             if (user.getDeptId() != null) {
                 DeptEntity dept = deptMapper.selectById(user.getDeptId());
                 if (dept != null) {
                     deptName = dept.getDeptName();
-                }
-            }
-
-            String leaderName = null;
-            if (user.getLeaderUserId() != null) {
-                UserEntity leader = userMapper.selectById(user.getLeaderUserId());
-                if (leader != null) {
-                    leaderName = leader.getRealName();
                 }
             }
 
@@ -174,12 +231,13 @@ public class UserController {
                     user.getShortName(),
                     user.getUsername(),
                     user.getRealName(),
-                    user.getAvatarUrl(),
+                    FileUploadUtils.getResourceUrl(user.getAvatarUrl(), "avatar.jpg"),
                     user.getDeptId(),
                     deptName,
                     user.getPosition(),
                     user.getLeaderUserId(),
-                    leaderName,
+                    userNameMap.getOrDefault(user.getLeaderUserId(), null),
+                    userUsernameMap.getOrDefault(user.getLeaderUserId(), null),
                     user.getPhone(),
                     user.getEmail(),
                     user.getUserType(),
@@ -188,8 +246,10 @@ public class UserController {
                     user.getLastLoginIp(),
                     user.getLoginCount(),
                     user.getCreatedBy(),
+                    userNameMap.getOrDefault(user.getCreatedBy(), null),
                     user.getCreatedAt(),
                     user.getUpdatedBy(),
+                    userNameMap.getOrDefault(user.getUpdatedBy(), null),
                     user.getUpdatedAt()
             );
         }).toList();
@@ -215,7 +275,30 @@ public class UserController {
             throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
         }
         assertUserTenant(u);
+        // 头像URL转为完整资源URL
+        if (u.getAvatarUrl() != null && !u.getAvatarUrl().isEmpty()) {
+            u.setAvatarUrl(FileUploadUtils.getResourceUrl(u.getAvatarUrl(), "avatar.jpg"));
+        }
         return ApiResponse.ok(u);
+    }
+
+    /**
+     * 获取用户绑定的角色列表
+     *
+     * @param userId 用户ID
+     * @return 用户角色列表
+     */
+    @GetMapping("/{userId}/roles")
+    @PreAuthorize("@authz.hasPerm('user:view')")
+    public ApiResponse<List<UserRoleEntity>> getUserRoles(@PathVariable Long userId) {
+        var me = SecurityUtils.currentUser();
+        UserEntity u = userService.getById(userId);
+        if (u == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
+        }
+        assertUserTenant(u);
+        List<UserRoleEntity> roles = userService.getUserRoles(u.getTenantId(), userId);
+        return ApiResponse.ok(roles);
     }
 
     /**
@@ -240,16 +323,28 @@ public class UserController {
 
         if (body.username() != null) u.setUsername(body.username());
         if (body.realName() != null) u.setRealName(body.realName());
-        if (body.avatarUrl() != null) u.setAvatarUrl(StringUtil.blankToNull(body.avatarUrl()));
+        if (body.password() != null && !body.password().isBlank()) u.setPasswordHash(body.password());
+        if (body.avatarUrl() != null) u.setAvatarUrl(StringUtil.blankToNull(FileUploadUtils.extractOssPath(body.avatarUrl())));
         if (body.deptId() != null) u.setDeptId(body.deptId());
         if (body.position() != null) u.setPosition(StringUtil.blankToNull(body.position()));
         if (body.leaderUserId() != null) u.setLeaderUserId(body.leaderUserId());
         if (body.phone() != null) u.setPhone(StringUtil.blankToNull(body.phone()));
         if (body.email() != null) u.setEmail(StringUtil.blankToNull(body.email()));
+        u.setUpdatedBy(SecurityUtils.currentUser().userId());
         userService.save(u);
 
+        // 更新角色绑定
+        if (body.roleIds() != null) {
+            userService.bindRoles(u.getTenantId(), userId, body.roleIds());
+            log.info("用户角色更新成功, userId={}, roleIds={}", userId, body.roleIds());
+        }
+
         log.info("用户更新成功, userId={}", userId);
-        return ApiResponse.ok(userService.getById(u.getId()));
+        UserEntity result = userService.getById(u.getId());
+        if (result != null && result.getAvatarUrl() != null && !result.getAvatarUrl().isEmpty()) {
+            result.setAvatarUrl(FileUploadUtils.getResourceUrl(result.getAvatarUrl(), "avatar.jpg"));
+        }
+        return ApiResponse.ok(result);
     }
 
     /**
@@ -274,10 +369,15 @@ public class UserController {
 
         Integer newStatus = body.status() == null ? 0 : body.status();
         u.setStatus(newStatus);
+        u.setUpdatedBy(SecurityUtils.currentUser().userId());
         userService.save(u);
 
         log.info("用户状态修改成功, userId={}, newStatus={}", userId, newStatus);
-        return ApiResponse.ok(userService.getById(u.getId()));
+        UserEntity result = userService.getById(u.getId());
+        if (result != null && result.getAvatarUrl() != null && !result.getAvatarUrl().isEmpty()) {
+            result.setAvatarUrl(FileUploadUtils.getResourceUrl(result.getAvatarUrl(), "avatar.jpg"));
+        }
+        return ApiResponse.ok(result);
     }
 
     /**
@@ -289,7 +389,7 @@ public class UserController {
      */
     @PatchMapping("/{userId}/reset-password")
     @PreAuthorize("@authz.hasPerm('user:reset')")
-    @AuditLog(module = "用户管理", operateType = "RESET_PASSWORD", bizModule = "user", fieldName = "password_hash")
+    @AuditLog(module = "用户管理", operateType = "RESET_PASSWORD", bizModule = "user", fieldName = "passwordHash")
     public ApiResponse<CommonResponses.ResetPasswordResponse> resetPassword(@PathVariable Long userId) {
         log.info("重置用户密码, userId={}", userId);
 
@@ -300,8 +400,9 @@ public class UserController {
         }
         assertUserTenant(u);
 
-        String plain = "Init@123456";
+        String plain = generateDefaultPassword(u.getRealName());
         u.setPasswordHash(plain);
+        u.setUpdatedBy(SecurityUtils.currentUser().userId());
         userService.save(u);
 
         Long tid = u.getTenantId();
@@ -326,7 +427,7 @@ public class UserController {
      */
     @PutMapping("/{userId}/roles")
     @PreAuthorize("@authz.hasPerm('role:grant')")
-    @AuditLog(module = "用户管理", operateType = "BIND_ROLE", bizModule = "user_role", fieldName = "role_ids")
+    @AuditLog(module = "用户管理", operateType = "BIND_ROLE", bizModule = "user_role", fieldName = "roleIds")
     public ApiResponse<CommonResponses.UserRoleBindResponse> bindRoles(@PathVariable Long userId,
                                                                        @Valid @RequestBody UserVo.UserRoleBindReq body) {
         Long tenantId = SecurityUtils.currentUser().tenantId();
@@ -347,7 +448,7 @@ public class UserController {
      */
     @DeleteMapping("/{userId}/roles/{roleId}")
     @PreAuthorize("@authz.hasPerm('role:grant')")
-    @AuditLog(module = "用户管理", operateType = "UNBIND_ROLE", bizModule = "user_role", fieldName = "role_id")
+    @AuditLog(module = "用户管理", operateType = "UNBIND_ROLE", bizModule = "user_role", fieldName = "roleId")
     public ApiResponse<CommonResponses.DeleteResponse> unbindRole(@PathVariable Long userId, @PathVariable Long roleId) {
         Long tenantId = SecurityUtils.currentUser().tenantId();
         log.info("解除角色绑定, userId={}, roleId={}, tenantId={}", userId, roleId, tenantId);
@@ -377,5 +478,43 @@ public class UserController {
                     u.getId(), u.getTenantId(), me.tenantId());
             throw new BizException(ErrorCode.FORBIDDEN, "无权访问该用户");
         }
+    }
+
+    /**
+     * 生成默认密码：Init@ + 姓名每个字首字母大写 + 3位随机数字
+     * 示例：张三 → Init@ZS382，John → Init@J015
+     */
+    private String generateDefaultPassword(String realName) {
+        String initials = getInitials(realName);
+        int randomNum = (int) (Math.random() * 1000);
+        return String.format("Init@%s%03d", initials, randomNum);
+    }
+
+    /**
+     * 获取字符串每个字符的首字母（中文取拼音首字母，英文直接取大写）
+     */
+    private String getInitials(String name) {
+        if (name == null || name.isEmpty()) {
+            return "U";
+        }
+        StringBuilder sb = new StringBuilder();
+        HanyuPinyinOutputFormat format = new HanyuPinyinOutputFormat();
+        format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
+        for (int i = 0; i < name.length(); i++) {
+            char ch = name.charAt(i);
+            if (Character.UnicodeScript.of(ch) == Character.UnicodeScript.HAN) {
+                try {
+                    String[] pinyin = PinyinHelper.toHanyuPinyinStringArray(ch, format);
+                    if (pinyin != null && pinyin.length > 0 && !pinyin[0].isEmpty()) {
+                        sb.append(Character.toUpperCase(pinyin[0].charAt(0)));
+                    }
+                } catch (Exception e) {
+                    log.warn("拼音转换失败, char={}", ch, e);
+                }
+            } else if (Character.isLetter(ch)) {
+                sb.append(Character.toUpperCase(ch));
+            }
+        }
+        return sb.length() > 0 ? sb.toString() : "U";
     }
 }

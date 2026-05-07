@@ -19,8 +19,10 @@ public record TenantListVo(
         String domain,              // 自定义域名
         String welcomeText,         // 租户配置JSON
         Long createdBy,
+        String createdByName,       // 创建人姓名
         LocalDateTime createdAt,
         Long updatedBy,
+        String updatedByName,       // 更新人姓名
         LocalDateTime updatedAt
 ) {
 }
