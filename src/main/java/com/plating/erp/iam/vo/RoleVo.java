@@ -57,11 +57,7 @@ public class RoleVo {
 
     public record RoleMenusReq(
             @NotNull(message = "菜单ID列表不能为空") 
-            List<Long> menuIds, 
-            @NotNull(message = "数据范围不能为空") 
-            @Min(value = 1, message = "数据范围最小为1") 
-            @Max(value = 4, message = "数据范围最大为4") 
-            Integer dataScope
+            List<Long> menuIds
     ) {
     }
 }

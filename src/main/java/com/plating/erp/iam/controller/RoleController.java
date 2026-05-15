@@ -222,14 +222,8 @@ public class RoleController {
             }
         }
         
-        // 更新角色的数据范围
-        if (body.dataScope() != null) {
-            existing.setDataScope(body.dataScope());
-            roleService.updateById(existing);
-        }
-        
         authzCacheService.evictTenant(tenantId);
-        return ApiResponse.ok(new RoleResponseVo.RoleMenusResponse(roleId, menuIds, body.dataScope()));
+        return ApiResponse.ok(new RoleResponseVo.RoleMenusResponse(roleId, menuIds));
     }
 
     @DeleteMapping("/{roleId}")

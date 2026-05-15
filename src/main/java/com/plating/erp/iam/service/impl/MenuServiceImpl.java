@@ -1,9 +1,13 @@
 package com.plating.erp.iam.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.plating.erp.base.vo.MenuVo;
 import com.plating.erp.common.security.CurrentUser;
 import com.plating.erp.common.security.SecurityUtils;
 import com.plating.erp.iam.entity.MenuEntity;
+import com.plating.erp.iam.entity.UserEntity;
 import com.plating.erp.iam.mapper.MenuMapper;
+import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.iam.service.MenuService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,9 +30,11 @@ public class MenuServiceImpl implements MenuService {
     private static final Logger log = LoggerFactory.getLogger(MenuServiceImpl.class);
     
     private final MenuMapper menuMapper;
+    private final UserMapper userMapper;
     
-    public MenuServiceImpl(MenuMapper menuMapper) {
+    public MenuServiceImpl(MenuMapper menuMapper, UserMapper userMapper) {
         this.menuMapper = menuMapper;
+        this.userMapper = userMapper;
     }
     
     /**
@@ -138,39 +144,125 @@ public class MenuServiceImpl implements MenuService {
     }
     
     /**
-     * 根据ID获取菜单
-     * 注意：调用方需要验证菜单是否属于当前租户
-     */
-    public MenuEntity getMenuById(Long id) {
-        return menuMapper.selectById(id);
-    }
-    
-    /**
      * 新增菜单
-     * 注意：调用方需要设置正确的 tenant_id
      */
-    public void addMenu(MenuEntity menu) {
+    @Override
+    public MenuEntity addMenu(MenuEntity menu) {
         menuMapper.insert(menu);
         log.info("菜单新增成功, menuId={}, menuName={}, tenantId={}", 
                 menu.getId(), menu.getMenuName(), menu.getTenantId());
+        return menu;
     }
     
     /**
      * 更新菜单
-     * 注意：调用方需要验证菜单是否属于当前租户
      */
-    public void updateMenu(MenuEntity menu) {
-        menuMapper.updateById(menu);
-        log.info("菜单更新成功, menuId={}", menu.getId());
+    @Override
+    public boolean updateMenu(MenuEntity menu) {
+        int rows = menuMapper.updateById(menu);
+        log.info("菜单更新成功, menuId={}, affected={}", menu.getId(), rows);
+        return rows > 0;
     }
     
     /**
-     * 删除菜单
-     * 注意：调用方需要验证菜单是否属于当前租户
+     * 删除菜单（逻辑删除）
      */
-    public void deleteMenu(Long id) {
-        menuMapper.deleteById(id);
-        log.info("菜单删除成功, menuId={}", id);
+    @Override
+    public boolean deleteMenu(Long menuId) {
+        MenuEntity entity = new MenuEntity();
+        entity.setId(menuId);
+        entity.setDeleted(1);
+        int rows = menuMapper.updateById(entity);
+        log.info("菜单逻辑删除, menuId={}, affected={}", menuId, rows);
+        return rows > 0;
+    }
+
+    /**
+     * 根据ID获取菜单
+     */
+    @Override
+    public MenuEntity getMenuById(Long menuId) {
+        return menuMapper.selectById(menuId);
+    }
+
+    /**
+     * 检查是否有子菜单
+     */
+    @Override
+    public boolean hasChildren(Long menuId) {
+        LambdaQueryWrapper<MenuEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(MenuEntity::getParentId, menuId)
+               .eq(MenuEntity::getDeleted, 0);
+        return menuMapper.selectCount(wrapper) > 0;
+    }
+
+    /**
+     * 获取菜单管理树（用于菜单管理页面）
+     * 返回完整字段的树形结构，平台管理员获取全部菜单，租户用户获取当前租户的菜单
+     */
+    @Override
+    public List<MenuVo.MenuTreeNode> getMenuTreeForManagement() {
+        CurrentUser user = SecurityUtils.currentUser();
+        List<MenuEntity> menus;
+        if (user.isSystem()) {
+            menus = menuMapper.selectAllMenus();
+        } else {
+            menus = menuMapper.selectTenantMenus(user.tenantId());
+        }
+
+        // 构建用户名Map
+        Map<Long, String> userNameMap = buildUserNameMap(menus);
+
+        // 按parentId分组，构建树形结构（包含所有类型）
+        Map<Long, List<MenuEntity>> parentMap = menus.stream()
+                .collect(Collectors.groupingBy(MenuEntity::getParentId));
+
+        List<MenuEntity> rootMenus = parentMap.getOrDefault(0L, Collections.emptyList());
+        return rootMenus.stream()
+                .map(menu -> convertToTreeNode(menu, parentMap, userNameMap))
+                .collect(Collectors.toList());
+    }
+
+    private MenuVo.MenuTreeNode convertToTreeNode(MenuEntity menu, Map<Long, List<MenuEntity>> parentMap, Map<Long, String> userNameMap) {
+        List<MenuEntity> children = parentMap.getOrDefault(menu.getId(), Collections.emptyList());
+        List<MenuVo.MenuTreeNode> childNodes = children.stream()
+                .map(child -> convertToTreeNode(child, parentMap, userNameMap))
+                .collect(Collectors.toList());
+
+        return new MenuVo.MenuTreeNode(
+                menu.getId(),
+                menu.getParentId(),
+                menu.getMenuName(),
+                menu.getMenuType(),
+                menu.getPath(),
+                menu.getComponent(),
+                menu.getIcon(),
+                menu.getPerms(),
+                menu.getSortNo(),
+                menu.getVisible(),
+                menu.getStatus(),
+                menu.getTenantId(),
+                menu.getCreatedBy(),
+                menu.getCreatedBy() != null ? userNameMap.getOrDefault(menu.getCreatedBy(), null) : null,
+                menu.getCreatedAt(),
+                menu.getUpdatedBy(),
+                menu.getUpdatedBy() != null ? userNameMap.getOrDefault(menu.getUpdatedBy(), null) : null,
+                menu.getUpdatedAt(),
+                childNodes.isEmpty() ? null : childNodes
+        );
+    }
+
+    private Map<Long, String> buildUserNameMap(List<MenuEntity> menus) {
+        List<Long> userIds = menus.stream()
+                .flatMap(m -> java.util.stream.Stream.of(m.getCreatedBy(), m.getUpdatedBy()))
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+        List<UserEntity> users = userMapper.selectBatchIds(userIds);
+        return users.stream().collect(Collectors.toMap(UserEntity::getId, UserEntity::getRealName, (a, b) -> a));
     }
 
     /**
