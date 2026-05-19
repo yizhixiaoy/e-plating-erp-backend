@@ -8,7 +8,7 @@ public class AuthVo {
     public record LoginReq(
             @NotBlank(message = "loginType不能为空") String loginType,
             String entryType,
-            @Size(max = 16, message = "tenantCode长度不能超过16") @Pattern(regexp = "^[a-z]*$", message = "tenantCode仅支持小写字母") String tenantCode,
+            @Size(max = 16, message = "tenantCode长度不能超过16") String tenantCode,
             @Size(min = 2, max = 64, message = "username长度需在2-64") @Pattern(regexp = "^[a-zA-Z0-9:@._-]+$", message = "username格式不合法") String username,
             @Size(min = 6, max = 64, message = "password长度需在6-64") String password,
             @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,

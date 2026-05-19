@@ -17,6 +17,10 @@ import com.plating.erp.iam.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -41,6 +45,7 @@ public class ChatServiceImpl implements ChatService {
     private static final long EDIT_LIMIT_MINUTES = 5L;
     private static final int REPLY_PREVIEW_MAX = 200;
     private static final Set<String> VALID_MSG_TYPES = Set.of("TEXT", "IMAGE", "FILE", "SYSTEM");
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final ConversationMapper conversationMapper;
     private final ConversationMemberMapper memberMapper;
@@ -222,19 +227,39 @@ public class ChatServiceImpl implements ChatService {
         if (!"TEXT".equalsIgnoreCase(msg.getMsgType())) {
             throw new BizException(ErrorCode.BAD_REQUEST, "仅文本消息可编辑");
         }
-        if (msg.getCreatedAt() == null
-                || ChronoUnit.MINUTES.between(msg.getCreatedAt(), LocalDateTime.now()) > EDIT_LIMIT_MINUTES) {
-            throw new BizException(ErrorCode.BAD_REQUEST, "超过 " + EDIT_LIMIT_MINUTES + " 分钟不可编辑");
-        }
         if (req.content() == null || req.content().equals(msg.getContent())) {
             return msg;
         }
+        // 保存编辑历史到 extraJson
+        appendEditHistory(msg);
         msg.setContent(req.content());
         msg.setEdited(1);
         msg.setEditedAt(LocalDateTime.now());
         messageMapper.updateById(msg);
         // 如果是会话最后一条消息，同步更新会话预览不变（lastMessageId/at 未变）
         return msg;
+    }
+
+    /** 将当前内容追加到 extraJson 的 editHistory 数组中 */
+    private void appendEditHistory(ChatMessageEntity msg) {
+        try {
+            String oldExtra = msg.getExtraJson();
+            ObjectNode root;
+            if (oldExtra != null && !oldExtra.isBlank()) {
+                root = (ObjectNode) OBJECT_MAPPER.readTree(oldExtra);
+            } else {
+                root = OBJECT_MAPPER.createObjectNode();
+            }
+            ArrayNode history = root.has("editHistory") ? (ArrayNode) root.get("editHistory") : OBJECT_MAPPER.createArrayNode();
+            ObjectNode entry = OBJECT_MAPPER.createObjectNode();
+            entry.put("content", msg.getContent());
+            entry.put("editedAt", (msg.getEditedAt() != null ? msg.getEditedAt() : LocalDateTime.now()).toString());
+            history.add(entry);
+            root.set("editHistory", history);
+            msg.setExtraJson(OBJECT_MAPPER.writeValueAsString(root));
+        } catch (Exception e) {
+            // JSON 解析失败时降级：不保存历史，不影响编辑主流程
+        }
     }
 
     @Override
@@ -438,9 +463,10 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private static LocalDateTime asDateTime(Object v) {
-        if (v == null) return null;
-        if (v instanceof LocalDateTime dt) return dt;
-        if (v instanceof java.sql.Timestamp ts) return ts.toLocalDateTime();
-        return null;
+        return switch (v) {
+            case LocalDateTime dt -> dt;
+            case java.sql.Timestamp ts -> ts.toLocalDateTime();
+            case null, default -> null;
+        };
     }
 }
