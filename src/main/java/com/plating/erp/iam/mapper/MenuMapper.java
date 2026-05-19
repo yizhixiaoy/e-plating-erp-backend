@@ -70,10 +70,11 @@ public interface MenuMapper extends BaseMapper<MenuEntity> {
     List<MenuEntity> selectPlatformMenus();
 
     /**
-     * 查询所有菜单(包括平台级和租户级)
-     * 用于系统管理员(tenant_id=1)获取完整菜单
+     * 查询所有启用的菜单(包括平台级和租户级)
+     * 用于系统管理员(tenant_id=1)获取完整菜单（路由、权限等运行时场景）
+     * 只返回 status=0 的菜单
      * 
-     * @return 所有菜单列表
+     * @return 所有启用的菜单列表
      */
     @InterceptorIgnore(tenantLine = "true")
     @Select("""
@@ -85,10 +86,24 @@ public interface MenuMapper extends BaseMapper<MenuEntity> {
     List<MenuEntity> selectAllMenus();
 
     /**
-     * 查询租户级菜单
+     * 查询所有菜单(包括平台级和租户级，含停用)
+     * 用于菜单管理页面，返回所有状态的菜单（含停用），便于管理启停
+     * 
+     * @return 所有菜单列表（含停用）
+     */
+    @InterceptorIgnore(tenantLine = "true")
+    @Select("""
+        SELECT * FROM sys_menu
+        WHERE deleted = 0
+        ORDER BY tenant_id ASC, sort_no ASC
+    """)
+    List<MenuEntity> selectAllMenusForManagement();
+
+    /**
+     * 查询租户级启用菜单
      * 
      * @param tenantId 租户ID
-     * @return 租户级菜单列表
+     * @return 租户级菜单列表（仅启用）
      */
     @Select("""
         SELECT * FROM sys_menu
@@ -98,4 +113,19 @@ public interface MenuMapper extends BaseMapper<MenuEntity> {
         ORDER BY sort_no ASC
     """)
     List<MenuEntity> selectTenantMenus(@Param("tenantId") Long tenantId);
+
+    /**
+     * 查询租户级所有菜单（含停用）
+     * 用于菜单管理页面
+     * 
+     * @param tenantId 租户ID
+     * @return 租户级菜单列表（含停用）
+     */
+    @Select("""
+        SELECT * FROM sys_menu
+        WHERE tenant_id = #{tenantId}
+          AND deleted = 0
+        ORDER BY sort_no ASC
+    """)
+    List<MenuEntity> selectTenantMenusForManagement(@Param("tenantId") Long tenantId);
 }

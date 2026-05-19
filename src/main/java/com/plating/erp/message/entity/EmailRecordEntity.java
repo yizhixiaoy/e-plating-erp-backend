@@ -16,6 +16,7 @@ public class EmailRecordEntity {
     private Long noticeId;
     private String receiverEmail;
     private String subject;
+    private String content;
     private Integer sendStatus;
     private String failReason;
     private Integer retryCount;

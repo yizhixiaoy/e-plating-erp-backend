@@ -283,6 +283,44 @@ public class UserController {
     }
 
     /**
+     * 获取用户公开资料（聊天等场景，仅需登录，不需 user:view 权限）
+     * 返回：realName, avatarUrl, position, deptName, companyName, phone, email
+     */
+    @GetMapping("/{userId}/profile")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<Map<String, Object>> userProfile(@PathVariable Long userId) {
+        UserEntity u = userService.getById(userId);
+        if (u == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
+        }
+        // 构造公开资料
+        Map<String, Object> profile = new java.util.LinkedHashMap<>();
+        profile.put("id", u.getId());
+        profile.put("realName", u.getRealName());
+        profile.put("username", u.getUsername());
+        profile.put("avatarUrl", u.getAvatarUrl() != null && !u.getAvatarUrl().isEmpty()
+                ? FileUploadUtils.getResourceUrl(u.getAvatarUrl(), "avatar.jpg") : null);
+        profile.put("position", u.getPosition());
+        profile.put("phone", u.getPhone());
+        profile.put("email", u.getEmail());
+        // 部门
+        String deptName = null;
+        if (u.getDeptId() != null) {
+            DeptEntity dept = deptMapper.selectById(u.getDeptId());
+            if (dept != null) deptName = dept.getDeptName();
+        }
+        profile.put("deptName", deptName);
+        // 公司
+        String companyName = null;
+        if (u.getTenantId() != null) {
+            var tenant = tenantService.getById(u.getTenantId());
+            if (tenant != null) companyName = tenant.getTenantName();
+        }
+        profile.put("companyName", companyName);
+        return ApiResponse.ok(profile);
+    }
+
+    /**
      * 获取用户绑定的角色列表
      *
      * @param userId 用户ID

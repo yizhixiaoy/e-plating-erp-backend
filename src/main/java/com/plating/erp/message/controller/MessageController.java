@@ -39,6 +39,14 @@ public class MessageController {
         return ApiResponse.ok(new PageResult<>(page.records(), page.total()));
     }
 
+    /** 单条通知详情 */
+    @GetMapping("/notices/{noticeId}")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<NoticeEntity> getNoticeDetail(@PathVariable Long noticeId) {
+        NoticeEntity found = requireNotice(noticeId);
+        return ApiResponse.ok(found);
+    }
+
     @PostMapping("/notices")
     @PreAuthorize("@authz.hasPerm('message:add')")
     @AuditLog(module = "消息中心", operateType = "CREATE", bizModule = "notice", fieldName = "title")
@@ -97,11 +105,41 @@ public class MessageController {
 
     @GetMapping("/notices/my")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<?> myNotices(@RequestParam(defaultValue = "1") Integer pageNum,
-                                    @RequestParam(defaultValue = "20") Integer pageSize,
-                                    @RequestParam(required = false) Integer readStatus) {
-        var page = messageService.myNotices(pageNum, pageSize, SecurityUtils.currentUser().userId(), readStatus);
-        return ApiResponse.ok(new PageResult<>(page.records(), page.total()));
+    public ApiResponse<PageResult<MessageVo.MyNoticeView>> myNotices(@RequestParam(defaultValue = "1") Integer pageNum,
+                                                                     @RequestParam(defaultValue = "20") Integer pageSize,
+                                                                     @RequestParam(required = false) Integer readStatus,
+                                                                     @RequestParam(required = false) String noticeType,
+                                                                     @RequestParam(required = false) String keyword,
+                                                                     @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateFrom,
+                                                                     @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTo) {
+        var page = messageService.myNoticesEnhanced(pageNum, pageSize,
+                SecurityUtils.currentUser().userId(), readStatus, noticeType, keyword, dateFrom, dateTo);
+        return ApiResponse.ok(page);
+    }
+
+    @GetMapping("/notices/my/stats")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<MessageVo.MyNoticeStats> myNoticeStats() {
+        return ApiResponse.ok(messageService.myNoticeStats(SecurityUtils.currentUser().userId()));
+    }
+
+    @PostMapping("/notices/my/read-all")
+    @PreAuthorize("isAuthenticated()")
+    @AuditLog(module = "消息中心", operateType = "BATCH_READ", bizModule = "notice", fieldName = "readStatus")
+    public ApiResponse<java.util.Map<String, Object>> batchReadAll() {
+        int updated = messageService.batchReadAllMy(SecurityUtils.currentUser().userId());
+        return ApiResponse.ok(java.util.Map.of("updated", updated));
+    }
+
+    @DeleteMapping("/notices/my/{noticeId}")
+    @PreAuthorize("isAuthenticated()")
+    @AuditLog(module = "消息中心", operateType = "DELETE_MY", bizModule = "notice", fieldName = "deleted")
+    public ApiResponse<java.util.Map<String, Object>> deleteMyNotice(@PathVariable Long noticeId) {
+        boolean ok = messageService.deleteMyNotice(SecurityUtils.currentUser().userId(), noticeId);
+        if (!ok) {
+            throw new BizException(ErrorCode.NOT_FOUND, "消息不存在或无权操作");
+        }
+        return ApiResponse.ok(java.util.Map.of("deleted", true));
     }
 
     @PostMapping("/notices/{noticeId}/publish")
@@ -193,7 +231,7 @@ public class MessageController {
         return ApiResponse.ok(messageService.saveNotice(found, userId));
     }
 
-    @PatchMapping("/notices/{noticeId}/read")
+    @PutMapping("/notices/{noticeId}/read")
     @PreAuthorize("isAuthenticated()")
     @AuditLog(module = "消息中心", operateType = "READ", bizModule = "notice", fieldName = "readStatus")
     public ApiResponse<CommonResponses.ReadStatusResponse> read(@PathVariable Long noticeId) {

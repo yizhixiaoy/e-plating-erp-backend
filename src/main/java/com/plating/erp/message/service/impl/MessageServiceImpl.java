@@ -16,6 +16,7 @@ import com.plating.erp.message.mapper.NoticeMapper;
 import com.plating.erp.message.mapper.NoticeUserMapper;
 import com.plating.erp.message.service.MessageService;
 import com.plating.erp.message.service.NoticeUserService;
+import com.plating.erp.message.vo.MessageVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -72,6 +73,123 @@ public class MessageServiceImpl implements MessageService {
         }
 
         return new PageResult<>(notices, total);
+    }
+
+    @Override
+    public PageResult<MessageVo.MyNoticeView> myNoticesEnhanced(int pageNum, int pageSize,
+                                                                Long userId,
+                                                                Integer readStatus,
+                                                                String noticeType,
+                                                                String keyword,
+                                                                LocalDateTime dateFrom,
+                                                                LocalDateTime dateTo) {
+        long offset = (pageNum - 1L) * pageSize;
+        List<Map<String, Object>> rows = noticeUserMapper.selectMyNoticesEnhanced(
+                userId, readStatus, noticeType, keyword, dateFrom, dateTo, offset, pageSize);
+        Long total = noticeUserMapper.countMyNoticesEnhanced(userId, readStatus, noticeType, keyword, dateFrom, dateTo);
+
+        List<MessageVo.MyNoticeView> list = new ArrayList<>();
+        for (Map<String, Object> r : rows) {
+            list.add(new MessageVo.MyNoticeView(
+                    toLong(r.get("noticeId")),
+                    toLong(r.get("noticeUserId")),
+                    toLong(r.get("tenantId")),
+                    (String) r.get("noticeType"),
+                    (String) r.get("title"),
+                    (String) r.get("content"),
+                    toInt(r.get("level")),
+                    (String) r.get("publishScope"),
+                    toLocalDateTime(r.get("publishTime")),
+                    toLocalDateTime(r.get("createdAt")),
+                    toInt(r.get("readStatus")),
+                    toLocalDateTime(r.get("readTime"))
+            ));
+        }
+        return new PageResult<>(list, total == null ? 0L : total);
+    }
+
+    @Override
+    public MessageVo.MyNoticeStats myNoticeStats(Long userId) {
+        Long total = noticeUserMapper.countVisibleForUser(userId, null);
+        Long unread = noticeUserMapper.countVisibleForUser(userId, 0);
+        Long todayNew = noticeUserMapper.countTodayNew(userId);
+        List<Map<String, Object>> grouped = noticeUserMapper.countUnreadByType(userId);
+        Map<String, Long> unreadByType = new LinkedHashMap<>();
+        for (Map<String, Object> g : grouped) {
+            String type = (String) g.get("noticeType");
+            Long cnt = toLong(g.get("cnt"));
+            if (type != null) {
+                unreadByType.put(type, cnt == null ? 0L : cnt);
+            }
+        }
+        return new MessageVo.MyNoticeStats(
+                total == null ? 0L : total,
+                unread == null ? 0L : unread,
+                todayNew == null ? 0L : todayNew,
+                unreadByType
+        );
+    }
+
+    @Override
+    @Transactional
+    public int batchReadAllMy(Long userId) {
+        List<NoticeUserEntity> unreadList = noticeUserMapper.selectList(
+                new LambdaQueryWrapper<NoticeUserEntity>()
+                        .eq(NoticeUserEntity::getUserId, userId)
+                        .eq(NoticeUserEntity::getReadStatus, 0)
+        );
+        if (unreadList.isEmpty()) {
+            return 0;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        int updated = 0;
+        for (NoticeUserEntity nu : unreadList) {
+            if (nu.getDeleted() != null && nu.getDeleted() != 0) {
+                continue;
+            }
+            nu.setReadStatus(1);
+            nu.setReadTime(now);
+            noticeUserMapper.updateById(nu);
+            updated++;
+        }
+        return updated;
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteMyNotice(Long userId, Long noticeId) {
+        NoticeUserEntity nu = noticeUserMapper.selectOne(
+                new LambdaQueryWrapper<NoticeUserEntity>()
+                        .eq(NoticeUserEntity::getUserId, userId)
+                        .eq(NoticeUserEntity::getNoticeId, noticeId)
+        );
+        if (nu == null) {
+            return false;
+        }
+        nu.setDeleted(1);
+        nu.setUpdatedAt(LocalDateTime.now());
+        return noticeUserMapper.updateById(nu) > 0;
+    }
+
+    private Long toLong(Object o) {
+        if (o == null) return null;
+        if (o instanceof Long l) return l;
+        if (o instanceof Number n) return n.longValue();
+        try { return Long.parseLong(o.toString()); } catch (Exception e) { return null; }
+    }
+
+    private Integer toInt(Object o) {
+        if (o == null) return null;
+        if (o instanceof Integer i) return i;
+        if (o instanceof Number n) return n.intValue();
+        try { return Integer.parseInt(o.toString()); } catch (Exception e) { return null; }
+    }
+
+    private LocalDateTime toLocalDateTime(Object o) {
+        if (o == null) return null;
+        if (o instanceof LocalDateTime ldt) return ldt;
+        if (o instanceof java.sql.Timestamp ts) return ts.toLocalDateTime();
+        return null;
     }
 
     @Override

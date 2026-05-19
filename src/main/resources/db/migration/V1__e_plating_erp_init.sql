@@ -11,7 +11,7 @@
  Target Server Version : 80030
  File Encoding         : 65001
 
- Date: 16/05/2026 01:18:29
+ Date: 19/05/2026 21:43:19
 */
 
 SET NAMES utf8mb4;
@@ -121,6 +121,26 @@ INSERT INTO `base_dict_item` VALUES (27, 0, 'sys_status', '正常', '0', 1, 0, N
 INSERT INTO `base_dict_item` VALUES (28, 0, 'sys_status', '停用', '1', 2, 0, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `base_dict_item` VALUES (29, 0, 'sys_yes_no', '否', '0', 1, 0, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `base_dict_item` VALUES (30, 0, 'sys_yes_no', '是', '1', 2, 0, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (300, 0, 'notice_type', '系统通知', 'system', 1, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (301, 0, 'notice_type', '待办提醒', 'todo', 2, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (302, 0, 'notice_type', '审批通知', 'approval', 3, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (303, 0, 'notice_type', '公告', 'announcement', 4, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (304, 0, 'notice_type', '个人消息', 'personal', 5, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (305, 0, 'notice_type', '工作通知', 'work', 6, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (306, 0, 'notice_type', '业务消息', 'business', 7, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (310, 0, 'notice_channel', '站内消息', 'system', 1, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (311, 0, 'notice_channel', '邮件', 'email', 2, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (312, 0, 'notice_channel', '企业微信', 'wechat_work', 3, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (313, 0, 'notice_channel', '钉钉', 'dingtalk', 4, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (314, 0, 'notice_channel', '短信', 'sms', 5, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (315, 0, 'chat_msg_type', '文本', 'TEXT', 1, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (316, 0, 'chat_msg_type', '图片', 'IMAGE', 2, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (317, 0, 'chat_msg_type', '文件', 'FILE', 3, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (318, 0, 'chat_msg_type', '系统消息', 'SYSTEM', 4, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (320, 0, 'msg_category', '消息通知', 'notice', 1, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (321, 0, 'msg_category', '聊天会话', 'chat', 2, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (322, 0, 'msg_category', '待办事项', 'todo', 3, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (323, 0, 'msg_category', '邮件', 'email', 4, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
 
 -- ----------------------------
 -- Table structure for base_dict_type
@@ -155,6 +175,161 @@ INSERT INTO `base_dict_type` VALUES (5, 0, 'sys_oper_type', '操作类型', 0, 0
 INSERT INTO `base_dict_type` VALUES (6, 0, 'sys_menu_type', '菜单类型', 0, 0, 'M=目录 C=菜单 F=按钮', NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `base_dict_type` VALUES (7, 0, 'sys_status', '通用状态', 0, 0, '0=正常 1=停用', NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `base_dict_type` VALUES (8, 0, 'sys_yes_no', '是否', 0, 0, '0=否 1=是', NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
+INSERT INTO `base_dict_type` VALUES (200, 0, 'notice_type', '通知类型', 1, 0, '消息通知的类型分类', NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_type` VALUES (201, 0, 'notice_channel', '通知渠道', 1, 0, '消息通知的发送渠道', NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_type` VALUES (202, 0, 'chat_msg_type', '聊天消息类型', 1, 0, '聊天消息的内容类型', NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_type` VALUES (203, 0, 'msg_category', '消息中心分类', 1, 0, '消息中心Tab分类', NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+
+-- ----------------------------
+-- Table structure for biz_todo
+-- ----------------------------
+DROP TABLE IF EXISTS `biz_todo`;
+CREATE TABLE `biz_todo`  (
+  `id` bigint NOT NULL COMMENT '主键',
+  `tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `assignee_id` bigint NOT NULL COMMENT '处理人用户ID',
+  `creator_id` bigint NOT NULL COMMENT '创建人用户ID',
+  `todo_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '待办类型',
+  `priority` tinyint NOT NULL DEFAULT 0 COMMENT '优先级:0低 1中 2高 3紧急',
+  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '待办标题',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '待办内容描述',
+  `biz_module` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '业务模块',
+  `biz_ref_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '业务关联ID',
+  `biz_ref_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '业务关联跳转URL',
+  `status` tinyint NOT NULL DEFAULT 0 COMMENT '状态:0待处理 1已处理 2已忽略 3已转交',
+  `handle_action` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '处理动作: AGREE/REJECT/TRANSFER/COMPLETE',
+  `handle_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '处理备注',
+  `handled_at` datetime NULL DEFAULT NULL COMMENT '处理时间',
+  `deadline` datetime NULL DEFAULT NULL COMMENT '截止时间',
+  `read_status` tinyint NOT NULL DEFAULT 0 COMMENT '已读状态:0未读 1已读',
+  `read_time` datetime NULL DEFAULT NULL COMMENT '已读时间',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_tenant_assignee`(`tenant_id`, `assignee_id`, `status`) USING BTREE,
+  INDEX `idx_tenant_creator`(`tenant_id`, `creator_id`) USING BTREE,
+  INDEX `idx_tenant_type_status`(`tenant_id`, `todo_type`, `status`) USING BTREE,
+  INDEX `idx_deadline`(`deadline`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '待办事项表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of biz_todo
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for biz_todo_handle_log
+-- ----------------------------
+DROP TABLE IF EXISTS `biz_todo_handle_log`;
+CREATE TABLE `biz_todo_handle_log`  (
+  `id` bigint NOT NULL COMMENT '主键',
+  `tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `todo_id` bigint NOT NULL COMMENT '待办ID',
+  `operator_id` bigint NOT NULL COMMENT '操作人用户ID',
+  `action` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '操作动作: AGREE/REJECT/TRANSFER/COMPLETE/IGNORE/READ',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '操作备注',
+  `target_user` bigint NULL DEFAULT NULL COMMENT '转交目标用户ID',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_todo_id`(`todo_id`) USING BTREE,
+  INDEX `idx_tenant_operator`(`tenant_id`, `operator_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '待办处理日志表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of biz_todo_handle_log
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for chat_conversation
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_conversation`;
+CREATE TABLE `chat_conversation`  (
+  `id` bigint NOT NULL COMMENT '主键',
+  `tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `conv_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '会话类型: SINGLE/GROUP',
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '会话名称（群聊时使用）',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '会话头像URL',
+  `owner_id` bigint NULL DEFAULT NULL COMMENT '创建者用户ID',
+  `last_message_id` bigint NULL DEFAULT NULL COMMENT '最后一条消息ID',
+  `last_message_at` datetime NULL DEFAULT NULL COMMENT '最后消息时间',
+  `member_count` int NULL DEFAULT 0 COMMENT '成员数量',
+  `created_by` bigint NULL DEFAULT NULL COMMENT '创建人',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_tenant_type`(`tenant_id`, `conv_type`) USING BTREE,
+  INDEX `idx_tenant_updated`(`tenant_id`, `updated_at`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '聊天会话表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of chat_conversation
+-- ----------------------------
+INSERT INTO `chat_conversation` VALUES (2056382571974078465, 1, 'SINGLE', NULL, NULL, NULL, 2056422477622464513, '2026-05-19 01:11:40', 2, 1, '2026-05-18 22:33:06', '2026-05-19 01:11:40', 0);
+
+-- ----------------------------
+-- Table structure for chat_conversation_member
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_conversation_member`;
+CREATE TABLE `chat_conversation_member`  (
+  `id` bigint NOT NULL COMMENT '主键',
+  `tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `conversation_id` bigint NOT NULL COMMENT '会话ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `role` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'MEMBER' COMMENT '角色: OWNER/ADMIN/MEMBER',
+  `nickname` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '群内昵称',
+  `pinned` tinyint NOT NULL DEFAULT 0 COMMENT '是否置顶:0否 1是',
+  `muted` tinyint NOT NULL DEFAULT 0 COMMENT '是否免打扰:0否 1是',
+  `last_read_id` bigint NULL DEFAULT NULL COMMENT '最后已读消息ID',
+  `unread_count` int NOT NULL DEFAULT 0 COMMENT '未读消息数',
+  `joined_at` datetime NULL DEFAULT NULL COMMENT '加入时间',
+  `quit_at` datetime NULL DEFAULT NULL COMMENT '退出时间',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_conv_user`(`tenant_id`, `conversation_id`, `user_id`) USING BTREE,
+  INDEX `idx_user_id`(`user_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '聊天会话成员表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of chat_conversation_member
+-- ----------------------------
+INSERT INTO `chat_conversation_member` VALUES (2056382572024410114, 1, 2056382571974078465, 1, 'MEMBER', NULL, 0, 0, 2056422477622464513, 0, '2026-05-18 22:33:06', NULL, '2026-05-18 22:33:06', '2026-05-19 01:11:39', 0);
+INSERT INTO `chat_conversation_member` VALUES (2056382572036993026, 1, 2056382571974078465, 2052406056122933250, 'MEMBER', NULL, 0, 0, NULL, 3, '2026-05-18 22:33:06', NULL, '2026-05-18 22:33:06', '2026-05-19 01:11:39', 0);
+
+-- ----------------------------
+-- Table structure for chat_message
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_message`;
+CREATE TABLE `chat_message`  (
+  `id` bigint NOT NULL COMMENT '主键',
+  `tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `conversation_id` bigint NOT NULL COMMENT '会话ID',
+  `sender_id` bigint NOT NULL COMMENT '发送者用户ID',
+  `msg_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'TEXT' COMMENT '消息类型: TEXT/IMAGE/FILE/SYSTEM',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '消息内容',
+  `extra_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '扩展信息JSON（图片URL/文件信息等）',
+  `recalled` tinyint NOT NULL DEFAULT 0 COMMENT '是否撤回:0否 1是',
+  `recalled_at` datetime NULL DEFAULT NULL COMMENT '撤回时间',
+  `edited` tinyint NOT NULL DEFAULT 0 COMMENT '是否已编辑:0否 1是',
+  `edited_at` datetime NULL DEFAULT NULL COMMENT '编辑时间',
+  `reply_to_id` bigint NULL DEFAULT NULL COMMENT '引用消息ID',
+  `reply_preview` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '引用消息内容预览',
+  `reply_sender_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '引用消息发送者名称',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_conv_id_time`(`conversation_id`, `created_at`) USING BTREE,
+  INDEX `idx_tenant_sender`(`tenant_id`, `sender_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '聊天消息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of chat_message
+-- ----------------------------
+INSERT INTO `chat_message` VALUES (2056382638533488642, 1, 2056382571974078465, 1, 'TEXT', '你好', NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, '2026-05-18 22:33:21', 0);
+INSERT INTO `chat_message` VALUES (2056422433909428226, 1, 2056382571974078465, 1, 'TEXT', '123', NULL, 1, '2026-05-19 01:12:04', 0, NULL, 2056382638533488642, '你好', '张坤', '2026-05-19 01:11:29', 0);
+INSERT INTO `chat_message` VALUES (2056422477622464513, 1, 2056382571974078465, 1, 'TEXT', '12303', NULL, 1, '2026-05-19 01:12:08', 0, NULL, NULL, NULL, NULL, '2026-05-19 01:11:40', 0);
 
 -- ----------------------------
 -- Table structure for msg_email_record
@@ -166,6 +341,7 @@ CREATE TABLE `msg_email_record`  (
   `notice_id` bigint NULL DEFAULT NULL COMMENT '关联消息ID',
   `receiver_email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '收件邮箱',
   `subject` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '邮件主题',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '邮件正文',
   `send_status` tinyint NOT NULL DEFAULT 0 COMMENT '0待发送 1成功 2失败',
   `fail_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '失败原因',
   `retry_count` int NOT NULL DEFAULT 0 COMMENT '重试次数',
@@ -223,9 +399,11 @@ CREATE TABLE `msg_notice_user`  (
   `read_time` datetime NULL DEFAULT NULL COMMENT '已读时间',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '行更新时间',
+  `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否 1是',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_tenant_notice_user`(`tenant_id`, `notice_id`, `user_id`) USING BTREE,
-  INDEX `idx_tenant_user_status`(`tenant_id`, `user_id`, `read_status`) USING BTREE
+  INDEX `idx_tenant_user_status`(`tenant_id`, `user_id`, `read_status`) USING BTREE,
+  INDEX `idx_deleted`(`deleted`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息接收状态表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -341,6 +519,15 @@ INSERT INTO `sys_biz_log` VALUES (2055295986004201474, 1, 'role', 0, 'menuIds', 
 INSERT INTO `sys_biz_log` VALUES (2055296028018544641, 1, 'role', 0, 'menuIds', '\"3\"', NULL, 1, 'system', '2026-05-15 22:35:33');
 INSERT INTO `sys_biz_log` VALUES (2055298461851521025, 1, 'role', 0, 'menuIds', '\"3\"', NULL, 1, 'system', '2026-05-15 22:45:13');
 INSERT INTO `sys_biz_log` VALUES (2055301286526521345, 1, 'user', 2054932938223599618, 'username', '\"2054932938223599618\"', '\"RKZQ-0001\"', 1, 'system', '2026-05-15 22:56:27');
+INSERT INTO `sys_biz_log` VALUES (2056382572548698114, 1, 'chat', 2056382571974078465, 'convType', NULL, '\"SINGLE\"', 1, 'system', '2026-05-18 22:33:05');
+INSERT INTO `sys_biz_log` VALUES (2056382639821139969, 1, 'chat', 2056382638533488642, 'content', NULL, '\"你好\"', 1, 'system', '2026-05-18 22:33:21');
+INSERT INTO `sys_biz_log` VALUES (2056402466124161025, 1, 'notice', 0, 'readStatus', NULL, NULL, 1, 'system', '2026-05-18 23:52:08');
+INSERT INTO `sys_biz_log` VALUES (2056422436153380866, 1, 'chat', 2056422433909428226, 'content', NULL, '\"123\"', 1, 'system', '2026-05-19 01:11:29');
+INSERT INTO `sys_biz_log` VALUES (2056422478423576578, 1, 'chat', 2056422477622464513, 'content', NULL, '\"12303\"', 1, 'system', '2026-05-19 01:11:39');
+INSERT INTO `sys_biz_log` VALUES (2056422579451777025, 1, 'chat', 2056422433909428226, 'recalled', '\"2056422433909428226\"', '1', 1, 'system', '2026-05-19 01:12:04');
+INSERT INTO `sys_biz_log` VALUES (2056422601899692034, 1, 'chat', 2056422477622464513, 'recalled', '\"2056422477622464513\"', '1', 1, 'system', '2026-05-19 01:12:09');
+INSERT INTO `sys_biz_log` VALUES (2056425895871172609, 1, 'chat', 0, 'convType', NULL, NULL, 1, 'system', '2026-05-19 01:25:14');
+INSERT INTO `sys_biz_log` VALUES (2056427065213767681, 1, 'chat', 0, 'convType', NULL, NULL, 1, 'system', '2026-05-19 01:29:53');
 
 -- ----------------------------
 -- Table structure for sys_dept
@@ -433,6 +620,11 @@ INSERT INTO `sys_login_history` VALUES (2049504812270219266, 1, 1, 'PASSWORD', '
 INSERT INTO `sys_login_history` VALUES (2052047179372093441, 1, 1, 'PASSWORD', '2026-05-06 23:25:47', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-06 23:25:47');
 INSERT INTO `sys_login_history` VALUES (2052432320145747969, 1, 1, 'PASSWORD', '2026-05-08 00:56:12', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-08 00:56:12');
 INSERT INTO `sys_login_history` VALUES (2054978991966744578, 1, 1, 'PASSWORD', '2026-05-15 01:35:46', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-15 01:35:46');
+INSERT INTO `sys_login_history` VALUES (2056380554136383490, 1, 1, 'PASSWORD', '2026-05-18 22:25:04', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-18 22:25:04');
+INSERT INTO `sys_login_history` VALUES (2056411822882394113, 1, 1, 'PASSWORD', '2026-05-19 00:29:20', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-19 00:29:20');
+INSERT INTO `sys_login_history` VALUES (2056415130774769666, 1, 1, 'PASSWORD', '2026-05-19 00:42:28', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-19 00:42:28');
+INSERT INTO `sys_login_history` VALUES (2056417930531360769, 1, 1, 'PASSWORD', '2026-05-19 00:53:36', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-19 00:53:36');
+INSERT INTO `sys_login_history` VALUES (2056425098114551809, 1, 1, 'PASSWORD', '2026-05-19 01:22:05', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-19 01:22:05');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -476,6 +668,8 @@ INSERT INTO `sys_menu` VALUES (17, 10, 0, '岗位管理', 'C', 'positions', 'Sta
 INSERT INTO `sys_menu` VALUES (20, 0, 0, '运维中心', 'M', 'ops', 'Monitor', NULL, 0, 2, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (21, 20, 0, '日志中心', 'C', 'logs', 'Document', NULL, 0, 0, 1, 'LogView', NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (22, 20, 0, '消息管理', 'C', 'messages', 'Bell', NULL, 0, 1, 1, 'MessageView', NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
+INSERT INTO `sys_menu` VALUES (23, 20, 0, '聊天', 'C', 'chat', 'ChatRound', NULL, 0, 2, 1, 'ChatView', NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `sys_menu` VALUES (24, 0, 0, '邮件', 'C', 'email', 'Message', 'message:email:view', 0, 50, 1, 'EmailView', NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 23:56:13', 0);
 INSERT INTO `sys_menu` VALUES (30, 0, 0, '个人中心', 'C', 'profile', 'Avatar', NULL, 0, 99, 1, 'ProfileView', NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (100, 1, 0, '查看工作台', 'F', '', '', 'workbench:view', 0, 0, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (110, 11, 0, '租户查看', 'F', '', '', 'tenant:view', 0, 0, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
@@ -519,6 +713,13 @@ INSERT INTO `sys_menu` VALUES (222, 22, 0, '消息发布', 'F', '', '', 'message
 INSERT INTO `sys_menu` VALUES (223, 22, 0, '消息撤回', 'F', '', '', 'message:revoke', 0, 3, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (224, 22, 0, '邮件记录查看', 'F', '', '', 'message:email:view', 0, 4, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (225, 22, 0, '小程序记录查看', 'F', '', '', 'message:mp:view', 0, 5, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
+INSERT INTO `sys_menu` VALUES (230, 23, 0, '发送消息', 'F', '', '', 'chat:send', 0, 0, 1, NULL, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `sys_menu` VALUES (231, 23, 0, '撤回消息', 'F', '', '', 'chat:recall', 0, 1, 1, NULL, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `sys_menu` VALUES (232, 23, 0, '创建会话', 'F', '', '', 'chat:create', 0, 2, 1, NULL, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `sys_menu` VALUES (240, 24, 0, '新建邮件', 'F', '', '', 'message:email:add', 0, 0, 1, NULL, NULL, '2026-05-18 23:56:13', NULL, '2026-05-18 23:56:13', 0);
+INSERT INTO `sys_menu` VALUES (241, 24, 0, '编辑邮件', 'F', '', '', 'message:email:edit', 0, 1, 1, NULL, NULL, '2026-05-18 23:56:13', NULL, '2026-05-18 23:56:13', 0);
+INSERT INTO `sys_menu` VALUES (242, 24, 0, '删除邮件', 'F', '', '', 'message:email:delete', 0, 2, 1, NULL, NULL, '2026-05-18 23:56:13', NULL, '2026-05-18 23:56:13', 0);
+INSERT INTO `sys_menu` VALUES (243, 24, 0, '发送邮件', 'F', '', '', 'message:email:send', 0, 3, 1, NULL, NULL, '2026-05-18 23:56:13', NULL, '2026-05-18 23:56:13', 0);
 INSERT INTO `sys_menu` VALUES (300, 30, 0, '查看个人信息', 'F', '', '', 'profile:view', 0, 0, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (301, 30, 0, '编辑个人信息', 'F', '', '', 'profile:edit', 0, 1, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (302, 30, 0, '修改密码', 'F', '', '', 'profile:password', 0, 2, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
@@ -637,6 +838,15 @@ INSERT INTO `sys_oper_log` VALUES (2055295985836429313, 1, '角色管理', 'GRAN
 INSERT INTO `sys_oper_log` VALUES (2055296027989184514, 1, '角色管理', 'GRANT_MENU', 1, 'system', '/api/v1/roles/3/menus', 'PUT', 'RoleController.assignMenus', '[\"3\",{\"menuIds\":[\"1\",\"100\",\"22\",\"220\",\"221\",\"222\",\"223\",\"224\",\"225\",\"30\",\"300\",\"301\",\"302\"]}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"roleId\":\"3\",\"menuIds\":[\"1\",\"100\",\"22\",\"220\",\"221\",\"222\",\"223\",\"224\",\"225\",\"30\",\"300\",\"301\",\"302\"]},\"traceId\":\"trace-1778855733282\",\"timestamp\":\"1778855733282\"}', 0, NULL, 35, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-15 22:35:33');
 INSERT INTO `sys_oper_log` VALUES (2055298461830549505, 1, '角色管理', 'GRANT_MENU', 1, 'system', '/api/v1/roles/3/menus', 'PUT', 'RoleController.assignMenus', '[\"3\",{\"menuIds\":[\"1\",\"100\",\"22\",\"220\",\"221\",\"222\",\"223\",\"224\",\"225\",\"30\",\"300\",\"301\",\"302\"]}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"roleId\":\"3\",\"menuIds\":[\"1\",\"100\",\"22\",\"220\",\"221\",\"222\",\"223\",\"224\",\"225\",\"30\",\"300\",\"301\",\"302\"]},\"traceId\":\"trace-1778856313555\",\"timestamp\":\"1778856313555\"}', 0, NULL, 29, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-15 22:45:13');
 INSERT INTO `sys_oper_log` VALUES (2055301286341971970, 1, '用户管理', 'UPDATE', 1, 'system', '/api/v1/users/2054932938223599618', 'PUT', 'UserController.update', '[\"2054932938223599618\",{\"username\":\"RKZQ-0001\",\"realName\":\"小明\",\"password\":\"***\",\"avatarUrl\":null,\"deptId\":\"2049506187976765442\",\"position\":\"HR\",\"leaderUserId\":null,\"phone\":\"***\",\"email\":null,\"roleIds\":[\"3\"]}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"id\":\"2054932938223599618\",\"tenantId\":\"2047713939437985793\",\"username\":\"RKZQ-0001\",\"passwordHash\":\"$2a$10$wHukT8ywT4qS23m1XuxXY.YWSbJ5zjGjyD1PNCi2lr3WkzdgGUBzS\",\"realName\":\"小明\",\"avatarUrl\":\"\",\"deptId\":\"2049506187976765442\",\"position\":\"HR\",\"leaderUserId\":null,\"phone\":\"17789896563\",\"officePhone\":null,\"email\":\"\",\"joinDate\":null,\"employeeStatus\":0,\"userType\":1,\"status\":0,\"lastLoginAt\":null,\"lastLoginIp\":null,\"loginCount\":0,\"wechatOpenid\":null,\"dingtalkUserid\":null,\"tenantName\":null,\"shortName\":null,\"createdBy\":\"1\",\"createdAt\":\"2026-05-14T22:32:45\",\"updatedBy\":\"1\",\"updatedAt\":\"2026-05-14T22:32:45\",\"deleted\":0},\"traceId\":\"trace-1778856986967\",\"timestamp\":\"1778856986967\"}', 0, NULL, 179, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-15 22:56:26');
+INSERT INTO `sys_oper_log` VALUES (2056382572355760130, 1, '聊天', 'CREATE', 1, 'system', '/api/v1/chat/conversations/single', 'POST', 'ChatController.createSingle', '[{\"peerUserId\":\"2052406056122933250\"}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"id\":\"2056382571974078465\",\"tenantId\":\"1\",\"convType\":\"SINGLE\",\"name\":null,\"avatar\":null,\"ownerId\":null,\"lastMessageId\":null,\"lastMessageAt\":null,\"memberCount\":2,\"createdBy\":\"1\",\"createdAt\":\"2026-05-18T22:33:05.5448617\",\"updatedAt\":\"2026-05-18T22:33:05.5448617\",\"deleted\":0},\"traceId\":\"trace-1779114785612\",\"timestamp\":\"1779114785612\"}', 0, NULL, 74, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-18 22:33:05');
+INSERT INTO `sys_oper_log` VALUES (2056382639493984257, 1, '聊天', 'CREATE', 1, 'system', '/api/v1/chat/messages', 'POST', 'ChatController.send', '[{\"conversationId\":\"2056382571974078465\",\"msgType\":\"TEXT\",\"content\":\"你好\",\"extraJson\":null,\"replyToId\":null}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"id\":\"2056382638533488642\",\"tenantId\":\"1\",\"conversationId\":\"2056382571974078465\",\"senderId\":\"1\",\"msgType\":\"TEXT\",\"content\":\"你好\",\"extraJson\":null,\"recalled\":0,\"recalledAt\":null,\"edited\":0,\"editedAt\":null,\"replyToId\":null,\"replyPreview\":null,\"replySenderName\":null,\"createdAt\":\"2026-05-18T22:33:21.4223846\",\"deleted\":0},\"traceId\":\"trace-1779114801648\",\"timestamp\":\"1779114801648\"}', 0, NULL, 231, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-18 22:33:21');
+INSERT INTO `sys_oper_log` VALUES (2056402464526131201, 1, '消息中心', 'BATCH_READ', 1, 'system', '/api/v1/messages/notices/my/read-all', 'POST', 'MessageController.batchReadAll', '[]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"updated\":0},\"traceId\":\"trace-1779119528290\",\"timestamp\":\"1779119528290\"}', 0, NULL, 6, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-18 23:52:08');
+INSERT INTO `sys_oper_log` VALUES (2056422434953809922, 1, '聊天', 'CREATE', 1, 'system', '/api/v1/chat/messages', 'POST', 'ChatController.send', '[{\"conversationId\":\"2056382571974078465\",\"msgType\":\"TEXT\",\"content\":\"123\",\"extraJson\":null,\"replyToId\":\"2056382638533488642\"}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"id\":\"2056422433909428226\",\"tenantId\":\"1\",\"conversationId\":\"2056382571974078465\",\"senderId\":\"1\",\"msgType\":\"TEXT\",\"content\":\"123\",\"extraJson\":null,\"recalled\":0,\"recalledAt\":null,\"edited\":0,\"editedAt\":null,\"replyToId\":\"2056382638533488642\",\"replyPreview\":\"你好\",\"replySenderName\":\"张坤\",\"createdAt\":\"2026-05-19T01:11:29.3789446\",\"deleted\":0},\"traceId\":\"trace-1779124289463\",\"timestamp\":\"1779124289463\"}', 0, NULL, 104, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-19 01:11:29');
+INSERT INTO `sys_oper_log` VALUES (2056422478192889858, 1, '聊天', 'CREATE', 1, 'system', '/api/v1/chat/messages', 'POST', 'ChatController.send', '[{\"conversationId\":\"2056382571974078465\",\"msgType\":\"TEXT\",\"content\":\"12303\",\"extraJson\":null,\"replyToId\":null}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"id\":\"2056422477622464513\",\"tenantId\":\"1\",\"conversationId\":\"2056382571974078465\",\"senderId\":\"1\",\"msgType\":\"TEXT\",\"content\":\"12303\",\"extraJson\":null,\"recalled\":0,\"recalledAt\":null,\"edited\":0,\"editedAt\":null,\"replyToId\":null,\"replyPreview\":null,\"replySenderName\":null,\"createdAt\":\"2026-05-19T01:11:39.80469\",\"deleted\":0},\"traceId\":\"trace-1779124299937\",\"timestamp\":\"1779124299937\"}', 0, NULL, 136, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-19 01:11:39');
+INSERT INTO `sys_oper_log` VALUES (2056422579296587778, 1, '聊天', 'STATUS', 1, 'system', '/api/v1/chat/messages/2056422433909428226/recall', 'POST', 'ChatController.recall', '[\"2056422433909428226\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"id\":\"2056422433909428226\",\"tenantId\":\"1\",\"conversationId\":\"2056382571974078465\",\"senderId\":\"1\",\"msgType\":\"TEXT\",\"content\":\"123\",\"extraJson\":null,\"recalled\":1,\"recalledAt\":\"2026-05-19T01:12:03.9130994\",\"edited\":0,\"editedAt\":null,\"replyToId\":\"2056382638533488642\",\"replyPreview\":\"你好\",\"replySenderName\":\"张坤\",\"createdAt\":\"2026-05-19T01:11:29\",\"deleted\":0},\"traceId\":\"trace-1779124324044\",\"timestamp\":\"1779124324044\"}', 0, NULL, 136, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-19 01:12:04');
+INSERT INTO `sys_oper_log` VALUES (2056422599961923586, 1, '聊天', 'STATUS', 1, 'system', '/api/v1/chat/messages/2056422477622464513/recall', 'POST', 'ChatController.recall', '[\"2056422477622464513\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"id\":\"2056422477622464513\",\"tenantId\":\"1\",\"conversationId\":\"2056382571974078465\",\"senderId\":\"1\",\"msgType\":\"TEXT\",\"content\":\"12303\",\"extraJson\":null,\"recalled\":1,\"recalledAt\":\"2026-05-19T01:12:08.1263552\",\"edited\":0,\"editedAt\":null,\"replyToId\":null,\"replyPreview\":null,\"replySenderName\":null,\"createdAt\":\"2026-05-19T01:11:40\",\"deleted\":0},\"traceId\":\"trace-1779124328971\",\"timestamp\":\"1779124328971\"}', 0, NULL, 849, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-19 01:12:08');
+INSERT INTO `sys_oper_log` VALUES (2056425895648874497, 1, '聊天', 'CREATE', 1, 'system', '/api/v1/chat/conversations/single', 'POST', 'ChatController.createSingle', '[{\"peerUserId\":\"1\"}]', NULL, 1, '对方用户非法', 8, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-19 01:25:14');
+INSERT INTO `sys_oper_log` VALUES (2056427064601399297, 1, '聊天', 'CREATE', 1, 'system', '/api/v1/chat/conversations/single', 'POST', 'ChatController.createSingle', '[{\"peerUserId\":\"1\"}]', NULL, 1, '对方用户非法', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-19 01:29:53');
 
 -- ----------------------------
 -- Table structure for sys_position
@@ -658,7 +868,7 @@ CREATE TABLE `sys_position`  (
   UNIQUE INDEX `uk_tenant_dept_position`(`tenant_id`, `dept_id`, `position_name`) USING BTREE,
   INDEX `idx_tenant_status`(`tenant_id`, `status`) USING BTREE,
   INDEX `idx_dept_id`(`dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_position
@@ -912,7 +1122,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 1, 'system', '$2a$10$7cR05yaoxCH8PeyGGEA/C.UTyfsSzsa7Fuy9jdbbVZ/MgVyoOqwq2', '张坤', 'iam%2Favatar%2F2026_04_24%2Fa45221b5e95b449596cc3f0def0eb55e.jpg', NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '2026-05-15 01:35:45', '127.0.0.1', 32, NULL, NULL, NULL, '2026-04-17 01:57:30', NULL, '2026-05-15 01:35:45', 0);
+INSERT INTO `sys_user` VALUES (1, 1, 'system', '$2a$10$7cR05yaoxCH8PeyGGEA/C.UTyfsSzsa7Fuy9jdbbVZ/MgVyoOqwq2', '张坤', 'iam%2Favatar%2F2026_04_24%2Fa45221b5e95b449596cc3f0def0eb55e.jpg', NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '2026-05-19 01:22:04', '127.0.0.1', 37, NULL, NULL, NULL, '2026-04-17 01:57:30', NULL, '2026-05-19 01:22:04', 0);
 INSERT INTO `sys_user` VALUES (10001, 20001, 'a-admin', '$2a$10$vh7HJgPPXtOy5P54CWzcy.dxK.xx/KeH4qosHhumu5bzge2/dmH9i', '租户管理员', NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 1, 0, '2026-04-20 23:56:36', '127.0.0.1', 3, NULL, NULL, NULL, '2026-04-17 01:57:30', 1, '2026-04-20 23:56:35', 0);
 INSERT INTO `sys_user` VALUES (10002, 20001, 'a-user', '$2a$10$dgiFuTvJHl3T0fzOBVA8qObGpiEtirRZxUcCPgL8hrn6RyODDesZG', '张三', NULL, NULL, NULL, NULL, NULL, NULL, 0, '13800000003', 'zhangsan@demo.com', 1, 0, NULL, NULL, 0, NULL, NULL, NULL, '2026-04-17 01:57:35', 1, '2026-04-17 01:57:35', 0);
 INSERT INTO `sys_user` VALUES (2052406056122933250, 1, 'ZC-0001', '$2a$10$DrW3k0CCytk3VY7x62BsDeC5aj2ubJ5mUzPsdy.neESJXovVjfgtG', '张坤2', '', 2049159839674892289, 'CEO', 1, NULL, NULL, 0, '', '3226235131@qq.com', 1, 0, NULL, NULL, 0, NULL, NULL, 1, '2026-05-07 23:11:50', 1, '2026-05-07 23:11:50', 0);

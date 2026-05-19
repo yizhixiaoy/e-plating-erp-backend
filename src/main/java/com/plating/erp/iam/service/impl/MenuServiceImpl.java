@@ -199,15 +199,16 @@ public class MenuServiceImpl implements MenuService {
     /**
      * 获取菜单管理树（用于菜单管理页面）
      * 返回完整字段的树形结构，平台管理员获取全部菜单，租户用户获取当前租户的菜单
+     * 注意：包含停用(status=1)的菜单，以便管理员在页面上重新启用
      */
     @Override
     public List<MenuVo.MenuTreeNode> getMenuTreeForManagement() {
         CurrentUser user = SecurityUtils.currentUser();
         List<MenuEntity> menus;
         if (user.isSystem()) {
-            menus = menuMapper.selectAllMenus();
+            menus = menuMapper.selectAllMenusForManagement();
         } else {
-            menus = menuMapper.selectTenantMenus(user.tenantId());
+            menus = menuMapper.selectTenantMenusForManagement(user.tenantId());
         }
 
         // 构建用户名Map

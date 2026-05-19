@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 public class MessageVo {
     public record NoticeCreateReq(
@@ -26,6 +27,32 @@ public class MessageVo {
 
     public record NoticeScheduleReq(
             @NotNull(message = "scheduledPublishAt不能为空") @Future(message = "scheduledPublishAt必须晚于当前时间") LocalDateTime scheduledPublishAt
+    ) {
+    }
+
+    /** 扭平的我的消息视图（包含 readStatus / noticeType） */
+    public record MyNoticeView(
+            Long noticeId,
+            Long noticeUserId,
+            Long tenantId,
+            String noticeType,
+            String title,
+            String content,
+            Integer level,
+            String publishScope,
+            LocalDateTime publishTime,
+            LocalDateTime createdAt,
+            Integer readStatus,
+            LocalDateTime readTime
+    ) {
+    }
+
+    /** 消息中心统计 */
+    public record MyNoticeStats(
+            long total,
+            long unread,
+            long todayNew,
+            Map<String, Long> unreadByType
     ) {
     }
 }
