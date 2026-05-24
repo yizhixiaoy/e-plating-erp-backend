@@ -90,4 +90,13 @@ public interface UserMapper extends BaseMapper<UserEntity> {
                                                @Param("deptId") Long deptId,
                                                @Param("status") Integer status,
                                                @Param("keyword") String keyword);
+
+    /**
+     * 检查邮箱是否已存在
+     */
+    default boolean existsByEmail(String email) {
+        if (email == null || email.isBlank()) return false;
+        return selectCount(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserEntity>()
+                .eq(UserEntity::getEmail, email)) > 0;
+    }
 }

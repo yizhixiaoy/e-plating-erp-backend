@@ -36,4 +36,6 @@ public class TodoEntity {
     private LocalDateTime updatedAt;
     @TableLogic
     private Integer deleted;
+    /** 是否邮件推送:0否 1是 */
+    private Integer pushEmail;
 }

@@ -15,6 +15,18 @@ spring:
         enabled: true
         url-pattern: /*
         exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*,/actuator/*,/swagger-ui*,/v3/api-docs*"
+  mail:
+    host: ${MAIL_HOST:localhost}  # 本地SMTP服务器
+    port: ${MAIL_PORT:25}  # 本地SMTP通常使用25端口
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}  # 本地SMTP通常不需要认证
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLED:false}  # 本地SMTP通常不需要TLS
+
 
 # 开发环境OSS配置（默认使用MinIO本地或腾讯云测试环境）
 oss:
@@ -45,3 +57,11 @@ oss:
     connection-timeout: ${MINIO_CONNECTION_TIMEOUT:30000}
     socket-timeout: ${MINIO_SOCKET_TIMEOUT:30000}
     secure: ${MINIO_SECURE:false}
+
+# 开发环境邮件配置（本地SMTP服务器示例）
+# 如果邮箱和服务在同一台机器,可使用本地SMTP服务如Postfix/hMailServer
+app:
+  mail:
+    enabled: ${MAIL_ENABLED:false}  # 开发环境默认禁用,需要时手动开启
+    from: ${MAIL_FROM:noreply@zhiduyun.com}
+    login-url: ${MAIL_LOGIN_URL:http://localhost:5173/login}

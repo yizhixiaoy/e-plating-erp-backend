@@ -11,7 +11,7 @@
  Target Server Version : 80030
  File Encoding         : 65001
 
- Date: 24/05/2026 22:02:50
+ Date: 25/05/2026 01:05:20
 */
 
 SET NAMES utf8mb4;
@@ -75,7 +75,7 @@ CREATE TABLE `base_dict_item`  (
   `tenant_id` bigint NOT NULL COMMENT '租户ID',
   `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '字典类型',
   `dict_label` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '标签',
-  `dict_value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '键值',
+  `dict_value` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '键值',
   `sort_no` int NOT NULL DEFAULT 0 COMMENT '排序',
   `status` tinyint NOT NULL DEFAULT 0 COMMENT '状态:0正常 1停用',
   `created_by` bigint NULL DEFAULT NULL,
@@ -91,16 +91,6 @@ CREATE TABLE `base_dict_item`  (
 -- ----------------------------
 -- Records of base_dict_item
 -- ----------------------------
-INSERT INTO `base_dict_item` VALUES (1, 0, 'sys_notice_type', '系统更新', 'SYS_UPDATE', 1, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
-INSERT INTO `base_dict_item` VALUES (2, 0, 'sys_notice_type', '内部通知', 'INTERNAL_NOTICE', 2, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
-INSERT INTO `base_dict_item` VALUES (3, 0, 'sys_notice_level', '普通', '1', 1, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
-INSERT INTO `base_dict_item` VALUES (4, 0, 'sys_notice_level', '重要', '2', 2, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
-INSERT INTO `base_dict_item` VALUES (5, 0, 'sys_notice_level', '紧急', '3', 3, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
-INSERT INTO `base_dict_item` VALUES (6, 0, 'sys_notice_status', '草稿', '0', 1, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
-INSERT INTO `base_dict_item` VALUES (7, 0, 'sys_notice_status', '待发布', '1', 2, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
-INSERT INTO `base_dict_item` VALUES (8, 0, 'sys_notice_status', '已发布', '2', 3, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
-INSERT INTO `base_dict_item` VALUES (9, 0, 'sys_notice_status', '已下架', '3', 4, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
-INSERT INTO `base_dict_item` VALUES (10, 0, 'sys_notice_status', '已撤回', '4', 5, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
 INSERT INTO `base_dict_item` VALUES (11, 0, 'sys_data_scope', '全部', '1', 1, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
 INSERT INTO `base_dict_item` VALUES (12, 0, 'sys_data_scope', '本部门及以下', '2', 2, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
 INSERT INTO `base_dict_item` VALUES (13, 0, 'sys_data_scope', '本部门', '3', 3, 0, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
@@ -128,19 +118,46 @@ INSERT INTO `base_dict_item` VALUES (303, 0, 'notice_type', '公告', 'announcem
 INSERT INTO `base_dict_item` VALUES (304, 0, 'notice_type', '个人消息', 'personal', 5, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
 INSERT INTO `base_dict_item` VALUES (305, 0, 'notice_type', '工作通知', 'work', 6, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
 INSERT INTO `base_dict_item` VALUES (306, 0, 'notice_type', '业务消息', 'business', 7, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
-INSERT INTO `base_dict_item` VALUES (310, 0, 'notice_channel', '站内消息', 'system', 1, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
-INSERT INTO `base_dict_item` VALUES (311, 0, 'notice_channel', '邮件', 'email', 2, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
-INSERT INTO `base_dict_item` VALUES (312, 0, 'notice_channel', '企业微信', 'wechat_work', 3, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
-INSERT INTO `base_dict_item` VALUES (313, 0, 'notice_channel', '钉钉', 'dingtalk', 4, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
-INSERT INTO `base_dict_item` VALUES (314, 0, 'notice_channel', '短信', 'sms', 5, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
-INSERT INTO `base_dict_item` VALUES (315, 0, 'chat_msg_type', '文本', 'TEXT', 1, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
-INSERT INTO `base_dict_item` VALUES (316, 0, 'chat_msg_type', '图片', 'IMAGE', 2, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
-INSERT INTO `base_dict_item` VALUES (317, 0, 'chat_msg_type', '文件', 'FILE', 3, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
-INSERT INTO `base_dict_item` VALUES (318, 0, 'chat_msg_type', '系统消息', 'SYSTEM', 4, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
+INSERT INTO `base_dict_item` VALUES (307, 0, 'notice_scope', '全平台', 'PLATFORM', 1, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (308, 0, 'notice_scope', '当前租户', 'TENANT', 2, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (309, 0, 'notice_scope', '指定部门', 'DEPT', 3, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (310, 0, 'notice_scope', '指定用户', 'USER', 4, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (311, 0, 'todo_status', '待处理', '0', 1, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (312, 0, 'todo_status', '已处理', '1', 2, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (313, 0, 'todo_status', '已忽略', '2', 3, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (314, 0, 'todo_status', '已转交', '3', 4, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (315, 0, 'todo_type', '任务', 'TASK', 1, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (316, 0, 'todo_type', '审批', 'APPROVAL', 2, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (317, 0, 'todo_type', '提醒', 'REMIND', 3, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (318, 0, 'todo_type', '其他', 'OTHER', 4, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (319, 0, 'notice_level', '普通', '1', 1, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
 INSERT INTO `base_dict_item` VALUES (320, 0, 'msg_category', '消息通知', 'notice', 1, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
 INSERT INTO `base_dict_item` VALUES (321, 0, 'msg_category', '聊天会话', 'chat', 2, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
 INSERT INTO `base_dict_item` VALUES (322, 0, 'msg_category', '待办事项', 'todo', 3, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
 INSERT INTO `base_dict_item` VALUES (323, 0, 'msg_category', '邮件', 'email', 4, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
+INSERT INTO `base_dict_item` VALUES (325, 0, 'chat_msg_type', '文本', 'TEXT', 1, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
+INSERT INTO `base_dict_item` VALUES (326, 0, 'chat_msg_type', '图片', 'IMAGE', 2, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
+INSERT INTO `base_dict_item` VALUES (327, 0, 'chat_msg_type', '文件', 'FILE', 3, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
+INSERT INTO `base_dict_item` VALUES (328, 0, 'chat_msg_type', '系统消息', 'SYSTEM', 4, 0, NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
+INSERT INTO `base_dict_item` VALUES (330, 0, 'notice_channel', '站内消息', 'system', 1, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (331, 0, 'notice_channel', '邮件', 'email', 2, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (332, 0, 'notice_channel', '企业微信', 'wechat_work', 3, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (333, 0, 'notice_channel', '钉钉', 'dingtalk', 4, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (334, 0, 'notice_channel', '短信', 'sms', 5, 1, NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
+INSERT INTO `base_dict_item` VALUES (335, 0, 'notice_level', '重要', '2', 2, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (336, 0, 'notice_level', '紧急', '3', 3, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (337, 0, 'todo_priority', '普通', '1', 1, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (338, 0, 'todo_priority', '重要', '2', 2, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (339, 0, 'todo_priority', '紧急', '3', 3, 0, NULL, '2026-05-24 23:00:00', NULL, '2026-05-24 23:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (340, 0, 'email_push_config', '新用户密码邮件', 'new_user_password', 1, 0, NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
+INSERT INTO `base_dict_item` VALUES (341, 0, 'email_push_config', '待办邮件通知', 'todo_notification', 2, 0, NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
+INSERT INTO `base_dict_item` VALUES (342, 0, 'email_push_config', '消息邮件通知', 'message_notification', 3, 0, NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
+INSERT INTO `base_dict_item` VALUES (350, 0, 'email_template', '新用户密码邮件主题', '欢迎加入{tenantName} - 您的账号已创建', 1, 0, NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
+INSERT INTO `base_dict_item` VALUES (351, 0, 'email_template', '新用户密码邮件内容', '尊敬的{realName}:\n\n欢迎加入{tenantName}!\n\n您的账号信息如下:\n用户名: {username}\n初始密码: {password}\n登录地址: {loginUrl}\n\n为了账号安全,请及时修改密码。', 2, 0, NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
+INSERT INTO `base_dict_item` VALUES (352, 0, 'email_template', '待办通知邮件主题', '您有一个新的待办事项: {todoTitle}', 3, 0, NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
+INSERT INTO `base_dict_item` VALUES (353, 0, 'email_template', '待办通知邮件内容', '尊敬的{realName}:\n\n您有一个新的待办事项需要处理:\n\n标题: {todoTitle}\n类型: {todoType}\n优先级: {priority}\n{content}\n\n请及时登录系统处理。', 4, 0, NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
+INSERT INTO `base_dict_item` VALUES (354, 0, 'email_template', '消息通知邮件主题', '新消息通知: {messageTitle}', 5, 0, NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
+INSERT INTO `base_dict_item` VALUES (355, 0, 'email_template', '消息通知邮件内容', '尊敬的{realName}:\n\n您收到一条新的消息通知:\n\n标题: {messageTitle}\n类型: {messageType}\n{content}\n\n请登录系统查看详情。', 6, 0, NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
 INSERT INTO `base_dict_item` VALUES (1001, 0, 'emoji', '😀', 'face:1', 1, 0, NULL, '2026-05-24 13:58:41', NULL, '2026-05-24 13:58:41', 0);
 INSERT INTO `base_dict_item` VALUES (1002, 0, 'emoji', '😃', 'face:2', 2, 0, NULL, '2026-05-24 13:58:41', NULL, '2026-05-24 13:58:41', 0);
 INSERT INTO `base_dict_item` VALUES (1003, 0, 'emoji', '😄', 'face:3', 3, 0, NULL, '2026-05-24 13:58:41', NULL, '2026-05-24 13:58:41', 0);
@@ -818,9 +835,6 @@ CREATE TABLE `base_dict_type`  (
 -- ----------------------------
 -- Records of base_dict_type
 -- ----------------------------
-INSERT INTO `base_dict_type` VALUES (1, 0, 'sys_notice_type', '消息类型', 0, 0, NULL, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
-INSERT INTO `base_dict_type` VALUES (2, 0, 'sys_notice_level', '消息级别', 0, 0, NULL, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
-INSERT INTO `base_dict_type` VALUES (3, 0, 'sys_notice_status', '播报状态', 0, 0, NULL, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
 INSERT INTO `base_dict_type` VALUES (4, 0, 'sys_data_scope', '数据范围', 0, 0, NULL, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
 INSERT INTO `base_dict_type` VALUES (5, 0, 'sys_oper_type', '操作类型', 0, 0, NULL, NULL, '2026-04-17 01:57:34', NULL, '2026-04-17 01:57:34', 0);
 INSERT INTO `base_dict_type` VALUES (6, 0, 'sys_menu_type', '菜单类型', 0, 0, 'M=目录 C=菜单 F=按钮', NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
@@ -831,6 +845,13 @@ INSERT INTO `base_dict_type` VALUES (201, 0, 'notice_channel', '通知渠道', 1
 INSERT INTO `base_dict_type` VALUES (202, 0, 'chat_msg_type', '聊天消息类型', 0, 0, '聊天消息的内容类型', NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
 INSERT INTO `base_dict_type` VALUES (203, 0, 'msg_category', '消息中心分类', 0, 0, '消息中心Tab分类', NULL, '2026-05-18 22:21:15', NULL, '2026-05-24 13:58:41', 0);
 INSERT INTO `base_dict_type` VALUES (204, 0, 'emoji', '表情包', 0, 1, '聊天表情包配置', NULL, '2026-05-24 13:58:41', NULL, '2026-05-24 13:58:41', 0);
+INSERT INTO `base_dict_type` VALUES (205, 0, 'notice_scope', '通知范围', 0, 0, '消息通知的接收范围', NULL, '2026-05-24 22:00:00', NULL, '2026-05-24 22:00:00', 0);
+INSERT INTO `base_dict_type` VALUES (206, 0, 'todo_status', '待办状态', 0, 0, '待办事项的状态', NULL, '2026-05-24 22:00:00', NULL, '2026-05-24 22:00:00', 0);
+INSERT INTO `base_dict_type` VALUES (207, 0, 'todo_priority', '待办优先级', 0, 0, '待办事项的优先级', NULL, '2026-05-24 22:00:00', NULL, '2026-05-24 22:00:00', 0);
+INSERT INTO `base_dict_type` VALUES (208, 0, 'notice_level', '通知等级', 0, 0, '消息通知的重要程度', NULL, '2026-05-24 22:00:00', NULL, '2026-05-24 22:00:00', 0);
+INSERT INTO `base_dict_type` VALUES (209, 0, 'todo_type', '待办类型', 0, 0, '待办事项的类型', NULL, '2026-05-24 22:00:00', NULL, '2026-05-24 22:00:00', 0);
+INSERT INTO `base_dict_type` VALUES (210, 0, 'email_push_config', '邮件推送配置', 0, 0, '新用户邮件推送相关配置', NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
+INSERT INTO `base_dict_type` VALUES (211, 0, 'email_template', '邮件模板', 0, 0, '系统邮件模板配置', NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
 
 -- ----------------------------
 -- Table structure for biz_todo
@@ -858,6 +879,7 @@ CREATE TABLE `biz_todo`  (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0正常 1删除',
+  `push_email` tinyint NOT NULL DEFAULT 0 COMMENT '是否邮件推送:0否 1是',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_tenant_assignee`(`tenant_id`, `assignee_id`, `status`) USING BTREE,
   INDEX `idx_tenant_creator`(`tenant_id`, `creator_id`) USING BTREE,
@@ -1048,6 +1070,7 @@ CREATE TABLE `msg_notice`  (
   `updated_by` bigint NULL DEFAULT NULL COMMENT '修改人',
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否 1是',
+  `push_email` tinyint NOT NULL DEFAULT 0 COMMENT '是否邮件推送:0否 1是',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_tenant_status_schedule`(`tenant_id`, `status`, `scheduled_publish_at`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '站内消息表' ROW_FORMAT = DYNAMIC;

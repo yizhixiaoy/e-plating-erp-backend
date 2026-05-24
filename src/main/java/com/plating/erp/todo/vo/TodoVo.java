@@ -26,7 +26,9 @@ public final class TodoVo {
             String bizModule,
             String bizRefId,
             String bizRefUrl,
-            LocalDateTime deadline
+            LocalDateTime deadline,
+            /** 是否邮件推送:0否 1是 */
+            Integer pushEmail
     ) {}
 
     /** 处理动作请求 */

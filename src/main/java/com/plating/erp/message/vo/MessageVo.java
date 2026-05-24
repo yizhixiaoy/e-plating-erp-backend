@@ -21,7 +21,9 @@ public class MessageVo {
             @NotBlank(message = "publishScope不能为空") @Pattern(regexp = "^(PLATFORM|TENANT|DEPT|USER)$", message = "publishScope取值不合法") String publishScope,
             String targetJson,
             Long userId,
-            LocalDateTime scheduledPublishAt
+            LocalDateTime scheduledPublishAt,
+            /** 是否邮件推送:0否 1是 */
+            Integer pushEmail
     ) {
     }
 

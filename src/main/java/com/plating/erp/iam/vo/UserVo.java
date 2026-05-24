@@ -30,8 +30,6 @@ public class UserVo {
             Long leaderUserId,
             @Pattern(regexp = "^$|" + ValidationConstants.PHONE_REGEX, message = ValidationConstants.PHONE_MESSAGE) 
             String phone,
-            @Pattern(regexp = "^$|" + ValidationConstants.EMAIL_REGEX, message = ValidationConstants.EMAIL_MESSAGE) 
-            String email,
             List<Long> roleIds
     ) {
     }

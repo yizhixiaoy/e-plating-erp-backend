@@ -64,6 +64,7 @@ public class MessageController {
         entity.setTargetJson(body.targetJson() == null ? "{}" : body.targetJson());
         entity.setCreatedBy(userId);
         entity.setUpdatedBy(userId);
+        entity.setPushEmail(body.pushEmail() != null ? body.pushEmail() : 0);
         if (body.scheduledPublishAt() != null) {
             if (!body.scheduledPublishAt().isAfter(LocalDateTime.now())) {
                 throw new BizException(ErrorCode.BAD_REQUEST, "预约发布时间必须晚于当前时间");

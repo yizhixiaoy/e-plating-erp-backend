@@ -11,6 +11,11 @@ import com.plating.erp.todo.mapper.TodoHandleLogMapper;
 import com.plating.erp.todo.mapper.TodoMapper;
 import com.plating.erp.todo.service.TodoService;
 import com.plating.erp.todo.vo.TodoVo;
+import com.plating.erp.iam.entity.UserEntity;
+import com.plating.erp.iam.mapper.UserMapper;
+import com.plating.erp.message.service.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +26,7 @@ import java.util.Set;
 
 @Service
 public class TodoServiceImpl implements TodoService {
+    private static final Logger log = LoggerFactory.getLogger(TodoServiceImpl.class);
 
     private static final Set<String> VALID_ACTIONS = Set.of(
             "AGREE", "REJECT", "TRANSFER", "COMPLETE", "IGNORE"
@@ -28,10 +34,17 @@ public class TodoServiceImpl implements TodoService {
 
     private final TodoMapper todoMapper;
     private final TodoHandleLogMapper todoHandleLogMapper;
+    private final UserMapper userMapper;
+    private final EmailService emailService;
 
-    public TodoServiceImpl(TodoMapper todoMapper, TodoHandleLogMapper todoHandleLogMapper) {
+    public TodoServiceImpl(TodoMapper todoMapper, 
+                          TodoHandleLogMapper todoHandleLogMapper,
+                          UserMapper userMapper,
+                          EmailService emailService) {
         this.todoMapper = todoMapper;
         this.todoHandleLogMapper = todoHandleLogMapper;
+        this.userMapper = userMapper;
+        this.emailService = emailService;
     }
 
     @Override
@@ -96,7 +109,29 @@ public class TodoServiceImpl implements TodoService {
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
         entity.setDeleted(0);
+        entity.setPushEmail(req.pushEmail() != null ? req.pushEmail() : 0);
         todoMapper.insert(entity);
+        
+        // 如果启用了邮件推送,给处理人发送邮件
+        if (entity.getPushEmail() != null && entity.getPushEmail() == 1) {
+            try {
+                UserEntity assignee = userMapper.selectById(req.assigneeId());
+                if (assignee != null && assignee.getEmail() != null && !assignee.getEmail().isBlank()) {
+                    emailService.sendTodoNotificationEmail(
+                        assignee.getId(),
+                        assignee.getEmail(),
+                        assignee.getRealName(),
+                        entity.getTitle(),
+                        entity.getTodoType(),
+                        entity.getPriority(),
+                        entity.getContent()
+                    );
+                }
+            } catch (Exception e) {
+                log.error("发送待办通知邮件异常: assigneeId={}", req.assigneeId(), e);
+            }
+        }
+        
         return entity;
     }
 

@@ -8,6 +8,17 @@ spring:
         enabled: false
       web-stat-filter:
         enabled: false
+  mail:
+    host: ${MAIL_HOST:localhost}  # 测试环境SMTP服务器
+    port: ${MAIL_PORT:25}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLED:false}
 
 # 测试环境OSS配置
 oss:
@@ -38,3 +49,10 @@ oss:
     connection-timeout: ${MINIO_CONNECTION_TIMEOUT:30000}
     socket-timeout: ${MINIO_SOCKET_TIMEOUT:30000}
     secure: ${MINIO_SECURE:false}
+
+# 测试环境邮件配置
+app:
+  mail:
+    enabled: ${MAIL_ENABLED:false}  # 测试环境默认禁用
+    from: ${MAIL_FROM:noreply@zhiduyun.com}
+    login-url: ${MAIL_LOGIN_URL:http://test.zhiduyun.com/login}

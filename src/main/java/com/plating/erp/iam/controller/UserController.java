@@ -20,6 +20,7 @@ import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.iam.service.UserService;
 import com.plating.erp.iam.vo.UserListVo;
 import com.plating.erp.iam.vo.UserVo;
+import com.plating.erp.message.service.EmailService;
 import com.plating.erp.platform.service.TenantService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -39,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 import net.sourceforge.pinyin4j.PinyinHelper;
 import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
+import net.sourceforge.pinyin4j.format.HanyuPinyinVCharType;
 
 import java.util.List;
 import java.util.Map;
@@ -60,6 +62,7 @@ public class UserController {
     private final RefreshTokenService refreshTokenService;
     private final CredentialRevocationService credentialRevocationService;
     private final TenantService tenantService;
+    private final EmailService emailService;
 
     public UserController(UserService userService,
                           UserMapper userMapper,
@@ -67,7 +70,8 @@ public class UserController {
                           AuthzCacheService authzCacheService,
                           RefreshTokenService refreshTokenService,
                           CredentialRevocationService credentialRevocationService,
-                          TenantService tenantService) {
+                          TenantService tenantService,
+                          EmailService emailService) {
         this.userService = userService;
         this.userMapper = userMapper;
         this.deptMapper = deptMapper;
@@ -75,6 +79,7 @@ public class UserController {
         this.refreshTokenService = refreshTokenService;
         this.credentialRevocationService = credentialRevocationService;
         this.tenantService = tenantService;
+        this.emailService = emailService;
     }
 
     /**
@@ -152,7 +157,9 @@ public class UserController {
         entity.setPosition(body.position() == null ? "" : body.position());
         entity.setLeaderUserId(body.leaderUserId());
         entity.setPhone(body.phone() == null ? "" : body.phone());
-        entity.setEmail(body.email() == null ? "" : body.email());
+        // 邮箱由后端根据姓名和租户域名自动生成
+        String generatedEmail = generateCompanyEmail(realName, entity.getTenantId());
+        entity.setEmail(generatedEmail);
         entity.setUserType(1);
         entity.setStatus(0);
         entity.setCreatedBy(me.userId());
@@ -165,6 +172,27 @@ public class UserController {
         if (body.roleIds() != null && !body.roleIds().isEmpty()) {
             userService.bindRoles(entity.getTenantId(), entity.getId(), body.roleIds());
             log.info("用户角色绑定成功, userId={}, roleIds={}", entity.getId(), body.roleIds());
+        }
+        
+        // 如果用户有邮箱且使用默认密码,发送初始化密码邮件
+        String plainPassword = null;
+        if (body.password() == null) {
+            plainPassword = generateDefaultPassword(realName);
+        }
+        
+        if (entity.getEmail() != null && !entity.getEmail().isBlank() && plainPassword != null) {
+            try {
+                emailService.sendNewUserPasswordEmail(
+                    entity.getId(),
+                    entity.getEmail(),
+                    entity.getRealName(),
+                    entity.getUsername(),
+                    plainPassword
+                );
+                log.info("新用户密码邮件已加入发送队列: userId={}, email={}", entity.getId(), entity.getEmail());
+            } catch (Exception e) {
+                log.error("发送新用户密码邮件异常: userId={}", entity.getId(), e);
+            }
         }
 
         UserEntity result = userService.getById(entity.getId());
@@ -516,6 +544,71 @@ public class UserController {
                     u.getId(), u.getTenantId(), me.tenantId());
             throw new BizException(ErrorCode.FORBIDDEN, "无权访问该用户");
         }
+    }
+
+    /**
+     * 生成企业邮箱账号
+     * 规则：姓名拼音全拼@企业域名，重名时追加数字后缀
+     * 参考飞书/钉钉: zhangsan@zhiduyun.com, zhangsan01@zhiduyun.com
+     */
+    private String generateCompanyEmail(String realName, Long tenantId) {
+        if (realName == null || realName.isBlank()) {
+            return "";
+        }
+        // 获取租户域名作为邮箱后缀
+        String domain = null;
+        if (tenantId != null) {
+            var tenant = tenantService.getById(tenantId);
+            if (tenant != null && tenant.getDomain() != null && !tenant.getDomain().isBlank()) {
+                domain = tenant.getDomain();
+            }
+        }
+        if (domain == null || domain.isBlank()) {
+            domain = "zhiduyun.com";
+        }
+        // 姓名转拼音全拼
+        String pinyinPrefix = toPinyinFull(realName);
+        if (pinyinPrefix.isEmpty()) {
+            return "";
+        }
+        // 检查重复，追加数字后缀
+        String candidate = pinyinPrefix + "@" + domain;
+        int suffix = 1;
+        while (userMapper.existsByEmail(candidate)) {
+            candidate = pinyinPrefix + String.format("%02d", suffix) + "@" + domain;
+            suffix++;
+        }
+        return candidate;
+    }
+
+    /**
+     * 中文姓名转拼音全拼（小写无空格）
+     * 张三 → zhangsan, John Smith → johnsmith
+     */
+    private String toPinyinFull(String name) {
+        if (name == null || name.isBlank()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        HanyuPinyinOutputFormat format = new HanyuPinyinOutputFormat();
+        format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
+        format.setVCharType(HanyuPinyinVCharType.WITH_V);
+        for (int i = 0; i < name.length(); i++) {
+            char ch = name.charAt(i);
+            if (Character.UnicodeScript.of(ch) == Character.UnicodeScript.HAN) {
+                try {
+                    String[] pinyin = PinyinHelper.toHanyuPinyinStringArray(ch, format);
+                    if (pinyin != null && pinyin.length > 0 && !pinyin[0].isEmpty()) {
+                        sb.append(pinyin[0]);
+                    }
+                } catch (Exception e) {
+                    log.warn("拼音转换失败, char={}", ch, e);
+                }
+            } else if (Character.isLetter(ch)) {
+                sb.append(Character.toLowerCase(ch));
+            }
+        }
+        return sb.toString();
     }
 
     /**

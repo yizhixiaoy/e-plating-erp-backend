@@ -30,4 +30,6 @@ public class NoticeEntity {
     private Long updatedBy;
     private LocalDateTime updatedAt;
     private Integer deleted;
+    /** 是否邮件推送:0否 1是 */
+    private Integer pushEmail;
 }

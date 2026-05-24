@@ -14,6 +14,7 @@ import com.plating.erp.message.entity.NoticeUserEntity;
 import com.plating.erp.message.mapper.EmailRecordMapper;
 import com.plating.erp.message.mapper.NoticeMapper;
 import com.plating.erp.message.mapper.NoticeUserMapper;
+import com.plating.erp.message.service.EmailService;
 import com.plating.erp.message.service.MessageService;
 import com.plating.erp.message.service.NoticeUserService;
 import com.plating.erp.message.vo.MessageVo;
@@ -36,16 +37,19 @@ public class MessageServiceImpl implements MessageService {
     private final UserMapper userMapper;
     private final EmailRecordMapper emailRecordMapper;
     private final ObjectMapper objectMapper;
+    private final EmailService emailService;
 
     public MessageServiceImpl(NoticeMapper noticeMapper, NoticeUserMapper noticeUserMapper,
                               NoticeUserService noticeUserService, UserMapper userMapper,
-                              EmailRecordMapper emailRecordMapper, ObjectMapper objectMapper) {
+                              EmailRecordMapper emailRecordMapper, ObjectMapper objectMapper,
+                              EmailService emailService) {
         this.noticeMapper = noticeMapper;
         this.noticeUserMapper = noticeUserMapper;
         this.noticeUserService = noticeUserService;
         this.userMapper = userMapper;
         this.emailRecordMapper = emailRecordMapper;
         this.objectMapper = objectMapper;
+        this.emailService = emailService;
     }
 
     @Override
@@ -264,6 +268,27 @@ public class MessageServiceImpl implements MessageService {
 
         if (!newRecords.isEmpty()) {
             noticeUserService.saveBatch(newRecords, 1000);
+        }
+        
+        // 如果启用了邮件推送,给所有接收人发送邮件
+        if (notice.getPushEmail() != null && notice.getPushEmail() == 1) {
+            for (Long uid : userIds) {
+                try {
+                    UserEntity user = userMapper.selectById(uid);
+                    if (user != null && user.getEmail() != null && !user.getEmail().isBlank()) {
+                        emailService.sendMessageNotificationEmail(
+                            uid, 
+                            user.getEmail(), 
+                            user.getRealName(),
+                            notice.getTitle(),
+                            notice.getNoticeType(),
+                            notice.getContent()
+                        );
+                    }
+                } catch (Exception e) {
+                    log.error("发送消息通知邮件异常: userId={}", uid, e);
+                }
+            }
         }
     }
 
