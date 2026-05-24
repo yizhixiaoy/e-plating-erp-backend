@@ -16,6 +16,7 @@ import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.common.security.JwtTokenService;
 import com.plating.erp.common.security.RefreshTokenService;
 import com.plating.erp.common.security.SecurityUtils;
+import com.plating.erp.common.security.SessionKeyService;
 import com.plating.erp.common.util.IpUtils;
 import com.plating.erp.iam.service.MenuService;
 import com.plating.erp.iam.service.UserService;
@@ -52,11 +53,13 @@ public class AuthController {
     private final LoginSecurityService loginSecurityService;
     private final UserService userService;
     private final MenuService menuService;
+    private final SessionKeyService sessionKeyService;
 
     public AuthController(AuthService authService, JwtTokenService jwtTokenService,
                          RefreshTokenService refreshTokenService, LoginHistoryMapper loginHistoryMapper,
                          ScanLoginService scanLoginService, LoginSecurityService loginSecurityService,
-                         UserService userService, MenuService menuService) {
+                         UserService userService, MenuService menuService,
+                         SessionKeyService sessionKeyService) {
         this.authService = authService;
         this.jwtTokenService = jwtTokenService;
         this.refreshTokenService = refreshTokenService;
@@ -65,6 +68,7 @@ public class AuthController {
         this.loginSecurityService = loginSecurityService;
         this.userService = userService;
         this.menuService = menuService;
+        this.sessionKeyService = sessionKeyService;
     }
 
     /**
@@ -333,7 +337,8 @@ public class AuthController {
                         loginResponse.accessToken(),
                         loginResponse.refreshToken(),
                         loginResponse.expiresIn(),
-                        loginResponse.userInfo()
+                        loginResponse.userInfo(),
+                        loginResponse.sessionKey()
                 ));
             } catch (Exception e) {
                 log.error("扫码登录失败, qrToken={}", qrToken, e);
@@ -347,6 +352,7 @@ public class AuthController {
                 null,
                 null,
                 7200,
+                null,
                 null
         ));
     }
@@ -382,6 +388,12 @@ public class AuthController {
         if (req != null && req.refreshToken() != null) {
             refreshTokenService.invalidate(req.refreshToken());
             log.info("用户登出成功, RefreshToken已失效");
+        }
+        // 清除通信会话密钥
+        try {
+            var user = SecurityUtils.currentUser();
+            sessionKeyService.remove(user.userId(), user.tenantId());
+        } catch (Exception ignored) {
         }
         return ApiResponse.ok(new CommonResponses.SuccessResponse(true));
     }

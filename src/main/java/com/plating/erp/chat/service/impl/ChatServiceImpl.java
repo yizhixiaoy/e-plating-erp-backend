@@ -1,6 +1,8 @@
 package com.plating.erp.chat.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.plating.erp.base.service.DictService;
+import com.plating.erp.base.vo.DictVo;
 import com.plating.erp.chat.entity.ChatMessageEntity;
 import com.plating.erp.chat.entity.ConversationEntity;
 import com.plating.erp.chat.entity.ConversationMemberEntity;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -29,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 聊天 Service 实现。
@@ -44,22 +48,31 @@ public class ChatServiceImpl implements ChatService {
     private static final long RECALL_LIMIT_MINUTES = 2L;
     private static final long EDIT_LIMIT_MINUTES = 5L;
     private static final int REPLY_PREVIEW_MAX = 200;
-    private static final Set<String> VALID_MSG_TYPES = Set.of("TEXT", "IMAGE", "FILE", "SYSTEM");
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    /** 聊天消息类型字典编码 */
+    private static final String DICT_CHAT_MSG_TYPE = "chat_msg_type";
 
     private final ConversationMapper conversationMapper;
     private final ConversationMemberMapper memberMapper;
     private final ChatMessageMapper messageMapper;
     private final UserMapper userMapper;
+    private final DictService dictService;
+
+    /** 消息类型字典缓存：只加载一次 */
+    private volatile Set<String> validMsgTypes;
+    private volatile Map<String, String> msgTypeLabelMap;
 
     public ChatServiceImpl(ConversationMapper conversationMapper,
                            ConversationMemberMapper memberMapper,
                            ChatMessageMapper messageMapper,
-                           UserMapper userMapper) {
+                           UserMapper userMapper,
+                           DictService dictService) {
         this.conversationMapper = conversationMapper;
         this.memberMapper = memberMapper;
         this.messageMapper = messageMapper;
         this.userMapper = userMapper;
+        this.dictService = dictService;
     }
 
     @Override
@@ -123,8 +136,8 @@ public class ChatServiceImpl implements ChatService {
     @Transactional
     public ChatMessageEntity send(ChatVo.SendReq req, Long currentUserId, Long tenantId) {
         ConversationMemberEntity me = ensureMember(req.conversationId(), currentUserId);
-        String msgType = req.msgType() == null ? "TEXT" : req.msgType().toUpperCase();
-        if (!VALID_MSG_TYPES.contains(msgType)) {
+        String msgType = req.msgType() == null ? defaultMsgType() : req.msgType().toUpperCase();
+        if (!getValidMsgTypes().contains(msgType)) {
             throw new BizException(ErrorCode.BAD_REQUEST, "非法的消息类型");
         }
         ChatMessageEntity msg = new ChatMessageEntity();
@@ -224,7 +237,7 @@ public class ChatServiceImpl implements ChatService {
         if (msg.getRecalled() != null && msg.getRecalled() == 1) {
             throw new BizException(ErrorCode.BAD_REQUEST, "已撤回的消息不可编辑");
         }
-        if (!"TEXT".equalsIgnoreCase(msg.getMsgType())) {
+        if (!defaultMsgType().equalsIgnoreCase(msg.getMsgType())) {
             throw new BizException(ErrorCode.BAD_REQUEST, "仅文本消息可编辑");
         }
         if (req.content() == null || req.content().equals(msg.getContent())) {
@@ -376,16 +389,16 @@ public class ChatServiceImpl implements ChatService {
         return me;
     }
 
-    private static String buildPreview(ChatMessageEntity msg) {
+    private String buildPreview(ChatMessageEntity msg) {
         String content = msg.getContent();
-        String type = msg.getMsgType() == null ? "TEXT" : msg.getMsgType();
-        String text;
-        switch (type) {
-            case "IMAGE" -> text = "[图片]";
-            case "FILE" -> text = "[文件]";
-            case "SYSTEM" -> text = "[系统消息]";
-            default -> text = content == null ? "" : content;
+        String type = msg.getMsgType() == null ? defaultMsgType() : msg.getMsgType();
+        Map<String, String> labelMap = getMsgTypeLabelMap();
+        // 非文本消息使用字典标签作为预览
+        if (labelMap.containsKey(type) && !defaultMsgType().equalsIgnoreCase(type)) {
+            String label = labelMap.get(type);
+            return "[" + label + "]";
         }
+        String text = content == null ? "" : content;
         if (text.length() > REPLY_PREVIEW_MAX) {
             text = text.substring(0, REPLY_PREVIEW_MAX);
         }
@@ -442,7 +455,8 @@ public class ChatServiceImpl implements ChatService {
                 asString(row.get("lastMessageType")),
                 asString(row.get("lastMessageContent")),
                 asLong(row.get("lastMessageSenderId")),
-                asString(row.get("lastMessageSenderName"))
+                asString(row.get("lastMessageSenderName")),
+                asInt(row.get("lastMessageRecalled"))
         );
     }
 
@@ -468,5 +482,44 @@ public class ChatServiceImpl implements ChatService {
             case java.sql.Timestamp ts -> ts.toLocalDateTime();
             case null, default -> null;
         };
+    }
+
+    // ==================== 消息类型字典查询 ====================
+
+    /** 从字典加载合法消息类型集合（懒加载 + 缓存） */
+    private Set<String> getValidMsgTypes() {
+        if (validMsgTypes == null) {
+            synchronized (this) {
+                if (validMsgTypes == null) {
+                    List<DictVo.DictDataVo> items = dictService.getDictData(DICT_CHAT_MSG_TYPE);
+                    validMsgTypes = items.stream()
+                            .map(DictVo.DictDataVo::dictValue)
+                            .collect(Collectors.toUnmodifiableSet());
+                }
+            }
+        }
+        return validMsgTypes;
+    }
+
+    /** 从字典加载消息类型 value→label 映射（懒加载 + 缓存） */
+    private Map<String, String> getMsgTypeLabelMap() {
+        if (msgTypeLabelMap == null) {
+            synchronized (this) {
+                if (msgTypeLabelMap == null) {
+                    List<DictVo.DictDataVo> items = dictService.getDictData(DICT_CHAT_MSG_TYPE);
+                    msgTypeLabelMap = items.stream()
+                            .collect(Collectors.toUnmodifiableMap(
+                                    DictVo.DictDataVo::dictValue,
+                                    DictVo.DictDataVo::dictLabel));
+                }
+            }
+        }
+        return msgTypeLabelMap;
+    }
+
+    /** 默认消息类型：字典中第一个（即 sort_no 最小的，通常为 TEXT） */
+    private String defaultMsgType() {
+        Set<String> types = getValidMsgTypes();
+        return types.stream().findFirst().orElse("TEXT");
     }
 }

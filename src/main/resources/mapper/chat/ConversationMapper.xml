@@ -28,7 +28,8 @@
         lm.msg_type        AS lastMessageType,
         lm.content         AS lastMessageContent,
         lm.sender_id       AS lastMessageSenderId,
-        COALESCE(lu.real_name, lu.username) AS lastMessageSenderName
+        COALESCE(lu.real_name, lu.username) AS lastMessageSenderName,
+        lm.recalled        AS lastMessageRecalled
     </sql>
 
     <!-- 我的会话查询连接（含成员关系 + peer + last_message 预览） -->

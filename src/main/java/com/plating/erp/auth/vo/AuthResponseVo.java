@@ -25,7 +25,8 @@ public class AuthResponseVo {
             String accessToken,
             String refreshToken,
             Integer expiresIn,
-            LoginUserInfo userInfo
+            LoginUserInfo userInfo,
+            String sessionKey
     ) {
     }
 
@@ -46,7 +47,8 @@ public class AuthResponseVo {
             String accessToken,
             String refreshToken,
             Integer expiresIn,
-            LoginUserInfo userInfo
+            LoginUserInfo userInfo,
+            String sessionKey
     ) {
     }
 

@@ -50,7 +50,8 @@ public final class ChatVo {
             String lastMessageType,
             String lastMessageContent,
             Long lastMessageSenderId,
-            String lastMessageSenderName
+            String lastMessageSenderName,
+            Integer lastMessageRecalled
     ) {}
 
     /** 消息视图 */

@@ -16,6 +16,7 @@ import com.plating.erp.common.api.ErrorCode;
 import com.plating.erp.common.security.JwtTokenService;
 import com.plating.erp.common.security.PermissionMapper;
 import com.plating.erp.common.security.RefreshTokenService;
+import com.plating.erp.common.security.SessionKeyService;
 import com.plating.erp.common.util.FileUploadUtils;
 import com.plating.erp.iam.entity.DeptEntity;
 import com.plating.erp.iam.entity.UserEntity;
@@ -48,6 +49,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRecentTenantMapper userRecentTenantMapper;
     private final DeptMapper deptMapper;
     private final LoginHistoryMapper loginHistoryMapper;
+    private final SessionKeyService sessionKeyService;
 
     public AuthServiceImpl(TenantMapper tenantMapper, UserMapper userMapper,
                            JwtTokenService jwtTokenService,
@@ -55,7 +57,8 @@ public class AuthServiceImpl implements AuthService {
                            LoginSecurityService loginSecurityService, ScanLoginService scanLoginService,
                            VerificationCodeService verificationCodeService, UserService userService,
                            PermissionMapper permissionMapper, UserRecentTenantMapper userRecentTenantMapper,
-                           DeptMapper deptMapper, LoginHistoryMapper loginHistoryMapper) {
+                           DeptMapper deptMapper, LoginHistoryMapper loginHistoryMapper,
+                           SessionKeyService sessionKeyService) {
         this.tenantMapper = tenantMapper;
         this.userMapper = userMapper;
         this.jwtTokenService = jwtTokenService;
@@ -68,6 +71,7 @@ public class AuthServiceImpl implements AuthService {
         this.userRecentTenantMapper = userRecentTenantMapper;
         this.deptMapper = deptMapper;
         this.loginHistoryMapper = loginHistoryMapper;
+        this.sessionKeyService = sessionKeyService;
     }
 
     private List<String> resolveUserRoles(Long userId, Long tenantId, Integer userType) {
@@ -411,6 +415,9 @@ public class AuthServiceImpl implements AuthService {
         log.info("用户登录成功, userId={}, username={}, tenantId={}, userType={}, entryType={}, roles={}", 
                 user.getId(), user.getUsername(), tenantId, user.getUserType(), entryType, roles);
 
+        // 生成通信会话密钥
+        String sessionKey = sessionKeyService.create(user.getId(), tenantId);
+
         return new AuthResponseVo.LoginResponse(
                 accessToken,
                 refreshToken,
@@ -427,7 +434,8 @@ public class AuthServiceImpl implements AuthService {
                         companyName,
                         FileUploadUtils.getResourceUrl(companyLogoUrl, "logo.png"),
                         tenant != null ? tenant.getWelcomeText() : null
-                )
+                ),
+                sessionKey
         );
     }
 
