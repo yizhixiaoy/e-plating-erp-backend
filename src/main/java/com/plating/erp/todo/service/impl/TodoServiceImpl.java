@@ -22,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class TodoServiceImpl implements TodoService {
@@ -76,6 +78,51 @@ public class TodoServiceImpl implements TodoService {
     }
 
     @Override
+    public PageResult<TodoEntity> myCreatedList(int pageNum, int pageSize, Long creatorId, TodoVo.QueryReq query) {
+        LambdaQueryWrapper<TodoEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TodoEntity::getCreatorId, creatorId);
+        if (query != null) {
+            if (query.todoType() != null && !query.todoType().isBlank()) {
+                wrapper.eq(TodoEntity::getTodoType, query.todoType());
+            }
+            if (query.status() != null) {
+                wrapper.eq(TodoEntity::getStatus, query.status());
+            }
+            if (query.priority() != null) {
+                wrapper.eq(TodoEntity::getPriority, query.priority());
+            }
+            if (query.keyword() != null && !query.keyword().isBlank()) {
+                wrapper.and(w -> w.like(TodoEntity::getTitle, query.keyword())
+                        .or().like(TodoEntity::getContent, query.keyword()));
+            }
+        }
+        wrapper.orderByDesc(TodoEntity::getCreatedAt);
+
+        Page<TodoEntity> page = todoMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
+        // 填充处理人姓名
+        List<TodoEntity> records = page.getRecords();
+        if (!records.isEmpty()) {
+            List<Long> assigneeIds = records.stream()
+                    .map(TodoEntity::getAssigneeId)
+                    .filter(id -> id != null)
+                    .distinct()
+                    .collect(Collectors.toList());
+            if (!assigneeIds.isEmpty()) {
+                List<UserEntity> users = userMapper.selectBatchIds(assigneeIds);
+                Map<Long, String> nameMap = users.stream()
+                        .collect(Collectors.toMap(UserEntity::getId, u -> 
+                            u.getRealName() + "(" + u.getUsername() + ")"));
+                for (TodoEntity t : records) {
+                    if (t.getAssigneeId() != null) {
+                        t.setAssigneeName(nameMap.getOrDefault(t.getAssigneeId(), String.valueOf(t.getAssigneeId())));
+                    }
+                }
+            }
+        }
+        return new PageResult<>(records, page.getTotal());
+    }
+
+    @Override
     public TodoEntity getById(Long id, Long currentUserId) {
         TodoEntity todo = todoMapper.selectById(id);
         if (todo == null) {
@@ -118,13 +165,16 @@ public class TodoServiceImpl implements TodoService {
                 UserEntity assignee = userMapper.selectById(req.assigneeId());
                 if (assignee != null && assignee.getEmail() != null && !assignee.getEmail().isBlank()) {
                     emailService.sendTodoNotificationEmail(
-                        assignee.getId(),
-                        assignee.getEmail(),
-                        assignee.getRealName(),
-                        entity.getTitle(),
-                        entity.getTodoType(),
-                        entity.getPriority(),
-                        entity.getContent()
+                            assignee.getId(),
+                            assignee.getEmail(),
+                            assignee.getRealName(),
+                            entity.getTitle(),
+                            entity.getTodoType(),
+                            entity.getPriority(),
+                            entity.getContent(),
+                            entity.getTenantId(),
+                            entity.getId(),
+                            creatorId
                     );
                 }
             } catch (Exception e) {
@@ -133,6 +183,34 @@ public class TodoServiceImpl implements TodoService {
         }
         
         return entity;
+    }
+
+    @Override
+    @Transactional
+    public TodoEntity update(Long id, TodoVo.CreateReq req, Long currentUserId) {
+        TodoEntity todo = todoMapper.selectById(id);
+        if (todo == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "待办不存在");
+        }
+        if (todo.getCreatorId() == null || !todo.getCreatorId().equals(currentUserId)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "仅创建人可编辑该待办");
+        }
+        if (todo.getStatus() != null && todo.getStatus() != 0) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "待办已被处理，不可编辑");
+        }
+        todo.setAssigneeId(req.assigneeId());
+        todo.setTodoType(req.todoType() == null ? "TASK" : req.todoType());
+        todo.setPriority(req.priority() == null ? 1 : req.priority());
+        todo.setTitle(req.title());
+        todo.setContent(req.content());
+        todo.setBizModule(req.bizModule());
+        todo.setBizRefId(req.bizRefId());
+        todo.setBizRefUrl(req.bizRefUrl());
+        todo.setDeadline(req.deadline());
+        todo.setPushEmail(req.pushEmail() != null ? req.pushEmail() : 0);
+        todo.setUpdatedAt(LocalDateTime.now());
+        todoMapper.updateById(todo);
+        return todo;
     }
 
     @Override
@@ -254,10 +332,30 @@ public class TodoServiceImpl implements TodoService {
         if (todo == null) {
             return false;
         }
-        if (todo.getAssigneeId() == null || !todo.getAssigneeId().equals(currentUserId)) {
-            throw new BizException(ErrorCode.FORBIDDEN, "仅处理人可删除该待办");
+        boolean isAssignee = todo.getAssigneeId() != null && todo.getAssigneeId().equals(currentUserId);
+        boolean isCreator = todo.getCreatorId() != null && todo.getCreatorId().equals(currentUserId);
+        if (!isAssignee && !isCreator) {
+            throw new BizException(ErrorCode.FORBIDDEN, "仅处理人或创建人可删除该待办");
         }
         return todoMapper.deleteById(id) > 0;
+    }
+
+    @Override
+    @Transactional
+    public void revoke(Long id, Long currentUserId) {
+        TodoEntity todo = todoMapper.selectById(id);
+        if (todo == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "待办不存在");
+        }
+        if (todo.getCreatorId() == null || !todo.getCreatorId().equals(currentUserId)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "仅创建人可撤回该待办");
+        }
+        if (todo.getStatus() != null && todo.getStatus() != 0) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "待办已被处理，不可撤回");
+        }
+        todo.setStatus(4);
+        todo.setUpdatedAt(LocalDateTime.now());
+        todoMapper.updateById(todo);
     }
 
     @Override

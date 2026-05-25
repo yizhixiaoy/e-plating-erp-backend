@@ -39,6 +39,22 @@ public class TodoController {
     }
 
     /**
+     * 我提交的待办列表
+     */
+    @GetMapping("/my-created")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<PageResult<TodoEntity>> myCreatedList(@RequestParam(defaultValue = "1") Integer pageNum,
+                                                              @RequestParam(defaultValue = "20") Integer pageSize,
+                                                              @RequestParam(required = false) String todoType,
+                                                              @RequestParam(required = false) Integer status,
+                                                              @RequestParam(required = false) Integer priority,
+                                                              @RequestParam(required = false) String keyword) {
+        var u = SecurityUtils.currentUser();
+        TodoVo.QueryReq query = new TodoVo.QueryReq(todoType, status, priority, keyword);
+        return ApiResponse.ok(todoService.myCreatedList(pageNum, pageSize, u.userId(), query));
+    }
+
+    /**
      * 详情
      */
     @GetMapping("/{id}")
@@ -57,6 +73,17 @@ public class TodoController {
     public ApiResponse<TodoEntity> create(@Valid @RequestBody TodoVo.CreateReq req) {
         var u = SecurityUtils.currentUser();
         return ApiResponse.ok(todoService.create(req, u.userId(), u.tenantId()));
+    }
+
+    /**
+     * 编辑待办（仅创建人可编辑）
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    @AuditLog(module = "待办中心", operateType = "UPDATE", bizModule = "todo", fieldName = "title")
+    public ApiResponse<TodoEntity> update(@PathVariable Long id, @Valid @RequestBody TodoVo.CreateReq req) {
+        var u = SecurityUtils.currentUser();
+        return ApiResponse.ok(todoService.update(id, req, u.userId()));
     }
 
     /**
@@ -92,7 +119,7 @@ public class TodoController {
     }
 
     /**
-     * 删除（软删，仅 assignee 可删）
+     * 删除（处理人或创建人可删）
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
@@ -101,6 +128,18 @@ public class TodoController {
         var u = SecurityUtils.currentUser();
         boolean ok = todoService.delete(id, u.userId());
         return ApiResponse.ok(new CommonResponses.DeleteResponse(ok, id));
+    }
+
+    /**
+     * 撤回待办（仅创建人可撤回）
+     */
+    @PostMapping("/{id}/revoke")
+    @PreAuthorize("isAuthenticated()")
+    @AuditLog(module = "待办中心", operateType = "REVOKE", bizModule = "todo", fieldName = "title")
+    public ApiResponse<CommonResponses.SuccessResponse> revoke(@PathVariable Long id) {
+        var u = SecurityUtils.currentUser();
+        todoService.revoke(id, u.userId());
+        return ApiResponse.ok(new CommonResponses.SuccessResponse(true));
     }
 
     /**

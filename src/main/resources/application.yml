@@ -78,7 +78,8 @@ app:
     publish-check-ms: ${MESSAGE_PUBLISH_CHECK_MS:60000}
   # 邮件配置(默认禁用,通过环境变量启用)
   mail:
-    enabled: ${MAIL_ENABLED:false}
+#    enabled: ${MAIL_ENABLED:false}
+    enabled: ${MAIL_ENABLED:true}
     from: ${MAIL_FROM:noreply@example.com}
     login-url: ${MAIL_LOGIN_URL:http://localhost:5173/login}
 

@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class MessageVo {
     public record NoticeCreateReq(
-            @NotNull(message = "tenantId不能为空") Long tenantId,
+            Long tenantId,
             @NotBlank(message = "noticeType不能为空") String noticeType,
             @NotBlank(message = "title不能为空") @Size(max = 128, message = "title长度不能超过128") String title,
             @NotBlank(message = "content不能为空") String content,

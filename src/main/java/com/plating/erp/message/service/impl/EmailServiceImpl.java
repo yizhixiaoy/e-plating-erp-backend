@@ -2,10 +2,11 @@ package com.plating.erp.message.service.impl;
 
 import com.plating.erp.base.service.DictService;
 import com.plating.erp.base.vo.DictVo;
+import com.plating.erp.iam.entity.UserEntity;
+import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.message.entity.EmailRecordEntity;
 import com.plating.erp.message.mapper.EmailRecordMapper;
 import com.plating.erp.message.service.EmailService;
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
     private final EmailRecordMapper emailRecordMapper;
     private final DictService dictService;
+    private final UserMapper userMapper;
     
     @Value("${app.mail.enabled:false}")
     private boolean mailEnabled;
@@ -42,15 +44,17 @@ public class EmailServiceImpl implements EmailService {
     
     public EmailServiceImpl(JavaMailSender mailSender, 
                            EmailRecordMapper emailRecordMapper,
-                           DictService dictService) {
+                           DictService dictService,
+                           UserMapper userMapper) {
         this.mailSender = mailSender;
         this.emailRecordMapper = emailRecordMapper;
         this.dictService = dictService;
+        this.userMapper = userMapper;
     }
     
     @Override
     @Async("emailTaskExecutor")
-    public void sendEmailAsync(Long tenantId, Long noticeId, String toEmail, String subject, String content) {
+    public void sendEmailAsync(Long tenantId, Long userId, Long noticeId, String senderEmail, String toEmail, String subject, String content) {
         if (!mailEnabled) {
             log.debug("邮件功能未启用,跳过发送: to={}", toEmail);
             return;
@@ -64,7 +68,9 @@ public class EmailServiceImpl implements EmailService {
         // 创建发送记录
         EmailRecordEntity record = new EmailRecordEntity();
         record.setTenantId(tenantId);
+        record.setReceiverUserId(userId);
         record.setNoticeId(noticeId);
+        record.setSenderEmail(senderEmail);
         record.setReceiverEmail(toEmail);
         record.setSubject(subject);
         record.setContent(content);
@@ -92,10 +98,10 @@ public class EmailServiceImpl implements EmailService {
             emailRecordMapper.updateById(record);
             
             log.info("邮件发送成功: to={}, subject={}", toEmail, subject);
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             // 更新发送失败
             record.setSendStatus(2);
-            record.setFailReason(e.getMessage());
+            record.setFailReason(e.getClass().getSimpleName() + ": " + e.getMessage());
             record.setUpdatedAt(LocalDateTime.now());
             emailRecordMapper.updateById(record);
             
@@ -104,9 +110,8 @@ public class EmailServiceImpl implements EmailService {
     }
     
     @Override
-    @Async("emailTaskExecutor")
     public void sendNewUserPasswordEmail(Long userId, String email, String realName, 
-                                         String username, String plainPassword) {
+                                         String username, String plainPassword, Long tenantId, Long creatorId) {
         if (!mailEnabled) {
             log.debug("邮件功能未启用,跳过新用户密码邮件: to={}", email);
             return;
@@ -118,15 +123,18 @@ public class EmailServiceImpl implements EmailService {
             String contentTemplate = getDictValue("email_template", "新用户密码邮件内容");
             
             // 模板变量替换
-            subject = subject.replace("{tenantName}", "电镀ERP系统");
+            String tenantName = getDictValue("email_template", "租户名称");
+            if (tenantName.isBlank()) tenantName = "电镀ERP系统";
+            subject = subject.replace("{tenantName}", tenantName);
             contentTemplate = contentTemplate
                     .replace("{realName}", realName != null ? realName : "用户")
                     .replace("{username}", username)
                     .replace("{password}", plainPassword)
                     .replace("{loginUrl}", loginUrl)
-                    .replace("{tenantName}", "电镀ERP系统");
+                    .replace("{tenantName}", tenantName);
             
-            sendEmailAsync(0L, null, email, subject, contentTemplate);
+            String senderEmail = resolveSenderEmail(creatorId);
+            sendEmailAsync(tenantId != null ? tenantId : 0L, userId, null, senderEmail, email, subject, contentTemplate);
             log.info("新用户密码邮件已加入发送队列: userId={}, email={}", userId, email);
         } catch (Exception e) {
             log.error("发送新用户密码邮件异常: userId={}, email={}", userId, email, e);
@@ -134,9 +142,9 @@ public class EmailServiceImpl implements EmailService {
     }
     
     @Override
-    @Async("emailTaskExecutor")
     public void sendTodoNotificationEmail(Long userId, String email, String realName,
-                                         String todoTitle, String todoType, Integer priority, String content) {
+                                         String todoTitle, String todoType, Integer priority, String content,
+                                         Long tenantId, Long relatedId, Long creatorId) {
         if (!mailEnabled) {
             log.debug("邮件功能未启用,跳过待办通知邮件: to={}", email);
             return;
@@ -147,16 +155,20 @@ public class EmailServiceImpl implements EmailService {
             String subject = getDictValue("email_template", "待办通知邮件主题");
             String contentTemplate = getDictValue("email_template", "待办通知邮件内容");
             
+            // 用字典标签替换原始类型的值（如 TASK → 任务）
+            String typeLabel = getDictLabel("todo_type", todoType);
+            
             // 模板变量替换
             subject = subject.replace("{todoTitle}", todoTitle);
             contentTemplate = contentTemplate
                     .replace("{realName}", realName != null ? realName : "用户")
                     .replace("{todoTitle}", todoTitle)
-                    .replace("{todoType}", todoType != null ? todoType : "任务")
+                    .replace("{todoType}", typeLabel != null ? typeLabel : (todoType != null ? todoType : "任务"))
                     .replace("{priority}", priority != null ? getPriorityText(priority) : "中")
                     .replace("{content}", content != null ? content : "");
             
-            sendEmailAsync(0L, null, email, subject, contentTemplate);
+            String senderEmail = resolveSenderEmail(creatorId);
+            sendEmailAsync(tenantId != null ? tenantId : 0L, userId, relatedId, senderEmail, email, subject, contentTemplate);
             log.info("待办通知邮件已加入发送队列: userId={}, email={}", userId, email);
         } catch (Exception e) {
             log.error("发送待办通知邮件异常: userId={}, email={}", userId, email, e);
@@ -164,9 +176,9 @@ public class EmailServiceImpl implements EmailService {
     }
     
     @Override
-    @Async("emailTaskExecutor")
     public void sendMessageNotificationEmail(Long userId, String email, String realName,
-                                            String messageTitle, String messageType, String content) {
+                                            String messageTitle, String messageType, String content,
+                                            Long tenantId, Long noticeId, Long creatorId) {
         if (!mailEnabled) {
             log.debug("邮件功能未启用,跳过消息通知邮件: to={}", email);
             return;
@@ -177,19 +189,62 @@ public class EmailServiceImpl implements EmailService {
             String subject = getDictValue("email_template", "消息通知邮件主题");
             String contentTemplate = getDictValue("email_template", "消息通知邮件内容");
             
+            // 用字典标签替换原始类型的值（如 system → 系统通知）
+            String typeLabel = getDictLabel("notice_type", messageType);
+            
             // 模板变量替换
             subject = subject.replace("{messageTitle}", messageTitle);
             contentTemplate = contentTemplate
                     .replace("{realName}", realName != null ? realName : "用户")
                     .replace("{messageTitle}", messageTitle)
-                    .replace("{messageType}", messageType != null ? messageType : "通知")
+                    .replace("{messageType}", typeLabel != null ? typeLabel : (messageType != null ? messageType : "通知"))
                     .replace("{content}", content != null ? content : "");
             
-            sendEmailAsync(0L, null, email, subject, contentTemplate);
+            String senderEmail = resolveSenderEmail(creatorId);
+            sendEmailAsync(tenantId != null ? tenantId : 0L, userId, noticeId, senderEmail, email, subject, contentTemplate);
             log.info("消息通知邮件已加入发送队列: userId={}, email={}", userId, email);
         } catch (Exception e) {
             log.error("发送消息通知邮件异常: userId={}, email={}", userId, email, e);
         }
+    }
+    
+    /**
+     * 根据操作人ID解析发件人标识
+     * 格式：姓名 <email>，操作人无邮箱时仅记录姓名
+     */
+    private String resolveSenderEmail(Long creatorId) {
+        if (creatorId == null) return null;
+        try {
+            UserEntity sender = userMapper.selectById(creatorId);
+            if (sender != null) {
+                if (sender.getEmail() != null && !sender.getEmail().isBlank()) {
+                    return sender.getRealName() + " <" + sender.getEmail() + ">";
+                }
+                return sender.getRealName();
+            }
+        } catch (Exception e) {
+            log.warn("解析发件人信息失败: creatorId={}", creatorId, e);
+        }
+        return null;
+    }
+    
+    /**
+     * 从字典获取字典标签（根据 dictValue 查找 dictLabel）
+     * 用于将类型值（如 TASK）转换为显示标签（如 任务）
+     */
+    private String getDictLabel(String dictType, String dictValue) {
+        if (dictValue == null || dictValue.isBlank()) return null;
+        try {
+            List<DictVo.DictDataVo> items = dictService.getDictData(dictType);
+            for (DictVo.DictDataVo item : items) {
+                if (item.dictValue().equalsIgnoreCase(dictValue)) {
+                    return item.dictLabel();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("从字典获取标签失败: dictType={}, dictValue={}", dictType, dictValue, e);
+        }
+        return null;
     }
     
     /**

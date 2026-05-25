@@ -13,7 +13,9 @@ public class EmailRecordEntity {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private Long tenantId;
+    private Long receiverUserId;
     private Long noticeId;
+    private String senderEmail;
     private String receiverEmail;
     private String subject;
     private String content;

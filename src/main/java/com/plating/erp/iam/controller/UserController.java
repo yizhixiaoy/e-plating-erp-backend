@@ -187,7 +187,9 @@ public class UserController {
                     entity.getEmail(),
                     entity.getRealName(),
                     entity.getUsername(),
-                    plainPassword
+                    plainPassword,
+                    entity.getTenantId(),
+                    me.userId()
                 );
                 log.info("新用户密码邮件已加入发送队列: userId={}, email={}", entity.getId(), entity.getEmail());
             } catch (Exception e) {

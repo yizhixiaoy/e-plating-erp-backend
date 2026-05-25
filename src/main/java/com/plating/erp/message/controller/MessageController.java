@@ -33,9 +33,10 @@ public class MessageController {
     @GetMapping("/notices")
     @PreAuthorize("@authz.hasPerm('message:add')")
     public ApiResponse<?> listManageNotices(@RequestParam(defaultValue = "1") Integer pageNum,
-                                            @RequestParam(defaultValue = "20") Integer pageSize) {
+                                            @RequestParam(defaultValue = "20") Integer pageSize,
+                                            @RequestParam(required = false) Integer status) {
         var u = SecurityUtils.currentUser();
-        var page = messageService.pageNotices(pageNum, pageSize, u.tenantId(), u.isSystem());
+        var page = messageService.listNotices(pageNum, pageSize, status, u.tenantId());
         return ApiResponse.ok(new PageResult<>(page.records(), page.total()));
     }
 
@@ -93,6 +94,7 @@ public class MessageController {
         found.setLevel(body.level() == null ? found.getLevel() : body.level());
         found.setPublishScope(body.publishScope() == null ? found.getPublishScope() : body.publishScope());
         found.setTargetJson(body.targetJson() == null ? found.getTargetJson() : body.targetJson());
+        found.setPushEmail(body.pushEmail() != null ? body.pushEmail() : found.getPushEmail());
         found.setUpdatedBy(userId);
         if (body.scheduledPublishAt() != null) {
             if (!body.scheduledPublishAt().isAfter(LocalDateTime.now())) {
@@ -102,6 +104,19 @@ public class MessageController {
             found.setStatus(1);
         }
         return ApiResponse.ok(messageService.saveNotice(found, userId));
+    }
+
+    @DeleteMapping("/notices/{noticeId}")
+    @PreAuthorize("@authz.hasPerm('message:add')")
+    @AuditLog(module = "消息中心", operateType = "DELETE", bizModule = "notice", fieldName = "deleted")
+    public ApiResponse<java.util.Map<String, Object>> deleteNotice(@PathVariable Long noticeId) {
+        NoticeEntity found = requireNotice(noticeId);
+        assertNoticeAccess(found);
+        boolean ok = messageService.deleteNotice(noticeId);
+        if (!ok) {
+            throw new BizException(ErrorCode.NOT_FOUND, "消息不存在");
+        }
+        return ApiResponse.ok(java.util.Map.of("deleted", true));
     }
 
     @GetMapping("/notices/my")

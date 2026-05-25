@@ -277,12 +277,15 @@ public class MessageServiceImpl implements MessageService {
                     UserEntity user = userMapper.selectById(uid);
                     if (user != null && user.getEmail() != null && !user.getEmail().isBlank()) {
                         emailService.sendMessageNotificationEmail(
-                            uid, 
-                            user.getEmail(), 
-                            user.getRealName(),
-                            notice.getTitle(),
-                            notice.getNoticeType(),
-                            notice.getContent()
+                                uid,
+                                user.getEmail(),
+                                user.getRealName(),
+                                notice.getTitle(),
+                                notice.getNoticeType(),
+                                notice.getContent(),
+                                notice.getTenantId(),
+                                noticeId,
+                                notice.getPublishedBy()
                         );
                     }
                 } catch (Exception e) {
