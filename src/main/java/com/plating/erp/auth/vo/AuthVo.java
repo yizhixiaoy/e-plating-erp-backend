@@ -10,7 +10,7 @@ public class AuthVo {
             String entryType,
             @Size(max = 16, message = "tenantCode长度不能超过16") String tenantCode,
             @Size(min = 2, max = 64, message = "username长度需在2-64") @Pattern(regexp = "^[a-zA-Z0-9:@._-]+$", message = "username格式不合法") String username,
-            @Size(min = 6, max = 64, message = "password长度需在6-64") String password,
+            String password,
             @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,
             @Size(min = 4, max = 8, message = "验证码长度不合法") String smsCode,
             @Pattern(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$", message = "邮箱格式不正确") String email,
@@ -20,7 +20,8 @@ public class AuthVo {
             Boolean rememberTenant,
             String ipAddress,  // 由后端从HTTP请求中自动获取，前端无需传递
             String deviceInfo, // 设备信息（如 Windows NT 10.0、iPhone等）
-            String userAgent   // 浏览器UA
+            String userAgent,  // 浏览器UA
+            String rsaClientId // RSA 密钥对标识，用于解密前端加密的密码
     ) {
     }
 

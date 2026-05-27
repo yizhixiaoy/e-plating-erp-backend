@@ -15,6 +15,7 @@ import com.plating.erp.common.api.response.CommonResponses;
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.common.security.JwtTokenService;
 import com.plating.erp.common.security.RefreshTokenService;
+import com.plating.erp.common.security.RsaKeyService;
 import com.plating.erp.common.security.SecurityUtils;
 import com.plating.erp.common.security.SessionKeyService;
 import com.plating.erp.common.util.IpUtils;
@@ -54,12 +55,13 @@ public class AuthController {
     private final UserService userService;
     private final MenuService menuService;
     private final SessionKeyService sessionKeyService;
+    private final RsaKeyService rsaKeyService;
 
     public AuthController(AuthService authService, JwtTokenService jwtTokenService,
                          RefreshTokenService refreshTokenService, LoginHistoryMapper loginHistoryMapper,
                          ScanLoginService scanLoginService, LoginSecurityService loginSecurityService,
                          UserService userService, MenuService menuService,
-                         SessionKeyService sessionKeyService) {
+                         SessionKeyService sessionKeyService, RsaKeyService rsaKeyService) {
         this.authService = authService;
         this.jwtTokenService = jwtTokenService;
         this.refreshTokenService = refreshTokenService;
@@ -69,6 +71,7 @@ public class AuthController {
         this.userService = userService;
         this.menuService = menuService;
         this.sessionKeyService = sessionKeyService;
+        this.rsaKeyService = rsaKeyService;
     }
 
     /**
@@ -139,6 +142,21 @@ public class AuthController {
     }
 
     /**
+     * 获取 RSA 公钥（用于登录时前端加密密码）
+     * @param clientId 客户端随机标识，关联密钥对
+     * @return Base64 编码的 RSA 公钥
+     */
+    @GetMapping("/public-key")
+    public ApiResponse<Map<String, String>> getPublicKey(@RequestParam String clientId) {
+        if (clientId == null || clientId.isBlank() || clientId.length() > 64) {
+            throw new com.plating.erp.common.api.BizException(
+                    com.plating.erp.common.api.ErrorCode.BAD_REQUEST, "clientId不合法");
+        }
+        String publicKey = rsaKeyService.generateKeyPair(clientId);
+        return ApiResponse.ok(Map.of("publicKey", publicKey, "clientId", clientId));
+    }
+
+    /**
      * 用户登录
      * 支持多种登录方式：密码、短信验证码、邮箱验证码、扫码登录
      * 
@@ -161,13 +179,25 @@ public class AuthController {
         log.info("用户登录请求, loginType={}, username={}, entryType={}, clientIp={}",
                 payload.loginType(), payload.username(), payload.entryType(), clientIp);
         
-        // 将IP地址设置到payload中
+        // 将IP地址设置到payload中，并处理 RSA 加密的密码
+        String effectivePassword = payload.password();
+        if (payload.rsaClientId() != null && !payload.rsaClientId().isBlank()
+                && "PASSWORD".equals(payload.loginType()) && payload.password() != null) {
+            String decrypted = rsaKeyService.decrypt(payload.rsaClientId(), payload.password());
+            if (decrypted != null) {
+                effectivePassword = decrypted;
+                log.debug("RSA 密码解密成功, username={}", payload.username());
+            } else {
+                log.warn("RSA 密码解密失败（密钥过期或无效），尝试明文处理, username={}", payload.username());
+            }
+        }
+
         payload = new AuthVo.LoginReq(
                 payload.loginType(),
                 payload.entryType(),
                 payload.tenantCode(),
                 payload.username(),
-                payload.password(),
+                effectivePassword,
                 payload.phone(),
                 payload.smsCode(),
                 payload.email(),
@@ -177,9 +207,10 @@ public class AuthController {
                 payload.rememberTenant(),
                 clientIp,
                 payload.deviceInfo(),
-                payload.userAgent()
+                payload.userAgent(),
+                null // rsaClientId 不传递到业务层
         );
-        
+
         try {
             // 1. 检查IP暴力破解防护
             loginSecurityService.checkBruteForce(clientIp);
@@ -301,8 +332,8 @@ public class AuthController {
             
             try {
                 // 使用标准登录流程（包含角色解析、安全校验、Token生成等完整逻辑）
-                // LoginReq 字段顺序: loginType, entryType, tenantCode, username, password, 
-                // phone, smsCode, email, emailCode, qrToken, clientType, rememberTenant, ipAddress, deviceInfo, userAgent
+                // LoginReq 字段顺序: loginType, entryType, tenantCode, username, password,
+                // phone, smsCode, email, emailCode, qrToken, clientType, rememberTenant, ipAddress, deviceInfo, userAgent, rsaClientId
                 // entryType 传 null，让后端根据用户角色自动判断 (SYSTEM/TENANT_ADMIN/EMPLOYEE)
                 AuthVo.LoginReq loginReq = new AuthVo.LoginReq(
                         "SCAN_CODE",    // loginType
@@ -319,7 +350,8 @@ public class AuthController {
                         null,           // rememberTenant
                         null,           // ipAddress (后端自动获取)
                         null,           // deviceInfo (扫码登录不传递)
-                        null            // userAgent (扫码登录不传递)
+                        null,           // userAgent (扫码登录不传递)
+                        null            // rsaClientId (扫码登录不需要)
                 );
                 
                 // 调用标准登录方法

@@ -2,44 +2,80 @@ package com.plating.erp.mobile.controller;
 
 import com.plating.erp.auth.service.AuthService;
 import com.plating.erp.common.api.ApiResponse;
+import com.plating.erp.common.api.BizException;
+import com.plating.erp.common.api.ErrorCode;
 import com.plating.erp.common.api.response.CommonResponses;
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.common.security.CurrentUser;
+import com.plating.erp.common.util.FileUploadUtils;
+import com.plating.erp.iam.entity.DeptEntity;
+import com.plating.erp.iam.entity.UserEntity;
+import com.plating.erp.iam.mapper.DeptMapper;
+import com.plating.erp.iam.service.DeptService;
+import com.plating.erp.iam.service.UserService;
+import com.plating.erp.message.entity.EmailRecordEntity;
 import com.plating.erp.message.entity.NoticeUserEntity;
+import com.plating.erp.message.entity.SmsRecordEntity;
+import com.plating.erp.message.mapper.EmailRecordMapper;
 import com.plating.erp.message.mapper.NoticeUserMapper;
+import com.plating.erp.message.mapper.SmsRecordMapper;
 import com.plating.erp.message.service.MessageService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.plating.erp.platform.entity.TenantEntity;
+import com.plating.erp.platform.service.TenantService;
 import com.plating.erp.todo.entity.TodoEntity;
 import com.plating.erp.todo.service.TodoService;
 import com.plating.erp.todo.vo.TodoVo;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 移动端聚合接口入口（/api/v1/mobile/*）
- *
- * <p>真实业务模块未就绪前，部分接口返回 mock 数据，标识为 // TODO(real):</p>
  */
 @RestController
 @RequestMapping("/api/v1/mobile")
 public class MobileController {
+    private static final String SETTINGS_KEY_PREFIX = "erp:mobile:settings:";
+
     private final MessageService messageService;
     private final AuthService authService;
     private final NoticeUserMapper noticeUserMapper;
     private final TodoService todoService;
+    private final UserService userService;
+    private final DeptService deptService;
+    private final DeptMapper deptMapper;
+    private final TenantService tenantService;
+    private final StringRedisTemplate redisTemplate;
+    private final EmailRecordMapper emailRecordMapper;
+    private final SmsRecordMapper smsRecordMapper;
 
     public MobileController(MessageService messageService,
                             AuthService authService,
                             NoticeUserMapper noticeUserMapper,
-                            TodoService todoService) {
+                            TodoService todoService,
+                            UserService userService,
+                            DeptService deptService,
+                            DeptMapper deptMapper,
+                            TenantService tenantService,
+                            StringRedisTemplate redisTemplate,
+                            EmailRecordMapper emailRecordMapper,
+                            SmsRecordMapper smsRecordMapper) {
         this.messageService = messageService;
         this.authService = authService;
         this.noticeUserMapper = noticeUserMapper;
         this.todoService = todoService;
+        this.userService = userService;
+        this.deptService = deptService;
+        this.deptMapper = deptMapper;
+        this.tenantService = tenantService;
+        this.redisTemplate = redisTemplate;
+        this.emailRecordMapper = emailRecordMapper;
+        this.smsRecordMapper = smsRecordMapper;
     }
 
     // ==================== 消息 ====================
@@ -60,7 +96,6 @@ public class MobileController {
 
     /**
      * 一键已读
-     * TODO(real): 移至 MessageService.batchReadAll(userId)
      */
     @PostMapping("/messages/read-all")
     @PreAuthorize("isAuthenticated()")
@@ -68,7 +103,6 @@ public class MobileController {
         if (user == null || user.userId() == null) {
             return ApiResponse.ok(null);
         }
-        // 直接定位未读 NoticeUser 记录，最多 1000 条避免一次过多
         List<NoticeUserEntity> unread = noticeUserMapper.selectVisiblePage(user.userId(), 0, 0L, 1000);
         if (unread != null) {
             for (NoticeUserEntity nu : unread) {
@@ -83,9 +117,6 @@ public class MobileController {
 
     // ==================== 待办 ====================
 
-    /**
-     * 待办列表（接入真实 TodoService）
-     */
     @GetMapping("/todos")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<PageResult<TodoEntity>> getTodos(@RequestParam(defaultValue = "1") Integer pageNum,
@@ -100,18 +131,12 @@ public class MobileController {
         return ApiResponse.ok(todoService.myList(pageNum, pageSize, user.userId(), q));
     }
 
-    /**
-     * 待办详情
-     */
     @GetMapping("/todos/{id}")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<TodoEntity> getTodoDetail(@PathVariable Long id, CurrentUser user) {
         return ApiResponse.ok(todoService.getById(id, user.userId()));
     }
 
-    /**
-     * 待办处理（同意/拒绝/转交/完成/忽略）
-     */
     @PostMapping("/todos/{id}/handle")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<TodoEntity> handleTodo(@PathVariable Long id,
@@ -120,9 +145,6 @@ public class MobileController {
         return ApiResponse.ok(todoService.handle(id, body, user.userId()));
     }
 
-    /**
-     * 待办单条已读
-     */
     @PutMapping("/todos/{id}/read")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<Void> markTodoRead(@PathVariable Long id, CurrentUser user) {
@@ -130,9 +152,6 @@ public class MobileController {
         return ApiResponse.ok(null);
     }
 
-    /**
-     * 待办统计
-     */
     @GetMapping("/todos/stats")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<TodoVo.Stats> todoStats(CurrentUser user) {
@@ -141,10 +160,6 @@ public class MobileController {
 
     // ==================== 工作台 ====================
 
-    /**
-     * 工作台聚合统计
-     * TODO(real): 接入真实统计 service（消息/待办/审计/在线人数）
-     */
     @GetMapping("/workbench/stats")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<Map<String, Object>> workbenchStats(CurrentUser user) {
@@ -163,53 +178,49 @@ public class MobileController {
         return ApiResponse.ok(resp);
     }
 
-    /**
-     * 快捷入口配置
-     * TODO(real): 后续从用户偏好/角色配置读取
-     */
     @GetMapping("/workbench/quick-access")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<List<Map<String, Object>>> quickAccess() {
         List<Map<String, Object>> list = List.of(
                 Map.of("key", "scan", "label", "扫一扫"),
+                Map.of("key", "chat", "label", "聊天"),
                 Map.of("key", "contacts", "label", "通讯录"),
                 Map.of("key", "message", "label", "消息"),
-                Map.of("key", "todo", "label", "待办"),
-                Map.of("key", "settings", "label", "设置")
+                Map.of("key", "todo", "label", "待办")
         );
         return ApiResponse.ok(list);
     }
 
     // ==================== 通讯录 ====================
 
-    /**
-     * 部门树
-     * TODO(real): 调用 DeptService.tree(tenantId) 替换 mock
-     */
     @GetMapping("/contacts/depts")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<List<Map<String, Object>>> contactsDepts(CurrentUser user) {
-        List<Map<String, Object>> list = List.of(
-                deptNode("1", "总部", 0),
-                deptNode("2", "生产部", 0),
-                deptNode("3", "质量部", 0),
-                deptNode("4", "销售部", 0)
-        );
-        return ApiResponse.ok(list);
+        List<DeptEntity> depts = deptService.listAll(user.tenantId());
+        // 构建部门树（两层简化：parentId=0 为顶层）
+        Map<Long, Map<String, Object>> nodeMap = new LinkedHashMap<>();
+        List<Map<String, Object>> roots = new ArrayList<>();
+        for (DeptEntity d : depts) {
+            Map<String, Object> node = new LinkedHashMap<>();
+            node.put("id", d.getId());
+            node.put("deptName", d.getDeptName());
+            node.put("parentId", d.getParentId());
+            node.put("children", new ArrayList<Map<String, Object>>());
+            nodeMap.put(d.getId(), node);
+        }
+        for (Map<String, Object> node : nodeMap.values()) {
+            Long parentId = (Long) node.get("parentId");
+            if (parentId == null || parentId == 0 || !nodeMap.containsKey(parentId)) {
+                roots.add(node);
+            } else {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> children = (List<Map<String, Object>>) nodeMap.get(parentId).get("children");
+                children.add(node);
+            }
+        }
+        return ApiResponse.ok(roots);
     }
 
-    private Map<String, Object> deptNode(String id, String name, int count) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", id);
-        m.put("deptName", name);
-        m.put("userCount", count);
-        return m;
-    }
-
-    /**
-     * 员工列表
-     * TODO(real): 改造 UserService 提供 mobile 友好的列表（无后台权限要求）
-     */
     @GetMapping("/contacts/users")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<Map<String, Object>> contactsUsers(@RequestParam(defaultValue = "1") Integer pageNum,
@@ -217,97 +228,154 @@ public class MobileController {
                                                           @RequestParam(required = false) String keyword,
                                                           @RequestParam(required = false) String deptId,
                                                           CurrentUser user) {
-        Map<String, Object> page = new LinkedHashMap<>();
-        page.put("records", List.of());
-        page.put("total", 0);
-        page.put("pageNum", pageNum);
-        page.put("pageSize", pageSize);
-        return ApiResponse.ok(page);
+        Long filterDeptId = null;
+        if (deptId != null && !deptId.isBlank()) {
+            try { filterDeptId = Long.parseLong(deptId); } catch (NumberFormatException ignored) {}
+        }
+        // status=0 表示在职
+        PageResult<UserEntity> page = userService.page(pageNum, pageSize, filterDeptId, 0, keyword, user.tenantId());
+        // 解析部门名称
+        Set<Long> deptIds = page.records().stream().map(UserEntity::getDeptId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, String> deptNameMap = new HashMap<>();
+        if (!deptIds.isEmpty()) {
+            for (Long did : deptIds) {
+                DeptEntity dept = deptMapper.selectById(did);
+                if (dept != null) deptNameMap.put(did, dept.getDeptName());
+            }
+        }
+        List<Map<String, Object>> records = new ArrayList<>();
+        for (UserEntity u : page.records()) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", u.getId());
+            m.put("realName", u.getRealName());
+            m.put("username", u.getUsername());
+            m.put("phone", u.getPhone());
+            m.put("email", u.getEmail());
+            m.put("deptName", u.getDeptId() != null ? deptNameMap.getOrDefault(u.getDeptId(), "") : "");
+            m.put("position", u.getPosition());
+            m.put("avatarUrl", u.getAvatarUrl() != null && !u.getAvatarUrl().isEmpty()
+                    ? FileUploadUtils.getResourceUrl(u.getAvatarUrl(), "avatar.jpg") : null);
+            records.add(m);
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("records", records);
+        result.put("total", page.total());
+        result.put("pageNum", pageNum);
+        result.put("pageSize", pageSize);
+        return ApiResponse.ok(result);
     }
 
-    /**
-     * 员工详情
-     * TODO(real): 调用 UserService.getProfileById(id) 替换 mock
-     */
     @GetMapping("/contacts/users/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Map<String, Object>> contactsUserDetail(@PathVariable String id) {
+    public ApiResponse<Map<String, Object>> contactsUserDetail(@PathVariable Long id, CurrentUser user) {
+        UserEntity u = userService.getById(id);
+        if (u == null || !u.getTenantId().equals(user.tenantId())) {
+            throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
+        }
+        String deptName = null;
+        if (u.getDeptId() != null) {
+            DeptEntity dept = deptMapper.selectById(u.getDeptId());
+            if (dept != null) deptName = dept.getDeptName();
+        }
         Map<String, Object> resp = new LinkedHashMap<>();
-        resp.put("id", id);
-        resp.put("realName", "");
-        resp.put("username", "");
-        resp.put("deptName", "");
-        resp.put("positionName", "");
-        resp.put("phone", "");
-        resp.put("email", "");
-        resp.put("status", 0);
+        resp.put("id", u.getId());
+        resp.put("realName", u.getRealName());
+        resp.put("username", u.getUsername());
+        resp.put("phone", u.getPhone());
+        resp.put("email", u.getEmail());
+        resp.put("deptName", deptName);
+        resp.put("position", u.getPosition());
+        resp.put("avatarUrl", u.getAvatarUrl() != null && !u.getAvatarUrl().isEmpty()
+                ? FileUploadUtils.getResourceUrl(u.getAvatarUrl(), "avatar.jpg") : null);
+        resp.put("status", u.getStatus());
+        resp.put("createTime", u.getCreatedAt());
         return ApiResponse.ok(resp);
     }
 
     // ==================== 个人中心 ====================
 
-    /**
-     * 个人资料
-     * TODO(real): 接入 UserService.getCurrentProfile()
-     */
     @GetMapping("/me/profile")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<Map<String, Object>> meProfile(CurrentUser user) {
+        UserEntity u = userService.getById(user.userId());
+        if (u == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
+        }
+        String deptName = null;
+        if (u.getDeptId() != null) {
+            DeptEntity dept = deptMapper.selectById(u.getDeptId());
+            if (dept != null) deptName = dept.getDeptName();
+        }
+        String tenantName = null;
+        if (u.getTenantId() != null) {
+            TenantEntity tenant = tenantService.getById(u.getTenantId());
+            if (tenant != null) tenantName = tenant.getTenantName();
+        }
         Map<String, Object> resp = new LinkedHashMap<>();
-        resp.put("userId", user.userId() == null ? "" : String.valueOf(user.userId()));
-        resp.put("tenantId", user.tenantId() == null ? "" : String.valueOf(user.tenantId()));
-        resp.put("username", user.username());
-        resp.put("realName", "");
-        resp.put("deptName", "");
-        resp.put("positionName", "");
-        resp.put("tenantName", "");
-        resp.put("avatar", "");
+        resp.put("userId", String.valueOf(u.getId()));
+        resp.put("tenantId", String.valueOf(u.getTenantId()));
+        resp.put("username", u.getUsername());
+        resp.put("realName", u.getRealName());
+        resp.put("phone", u.getPhone());
+        resp.put("email", u.getEmail());
+        resp.put("deptName", deptName);
+        resp.put("position", u.getPosition());
+        resp.put("tenantName", tenantName);
+        resp.put("avatarUrl", u.getAvatarUrl() != null && !u.getAvatarUrl().isEmpty()
+                ? FileUploadUtils.getResourceUrl(u.getAvatarUrl(), "avatar.jpg") : null);
         return ApiResponse.ok(resp);
     }
 
-    /**
-     * 修改密码
-     * TODO(real): 接入 UserService.changePassword(userId, oldPwd, newPwd)，并使旧 token 失效
-     */
     @PutMapping("/me/password")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<CommonResponses.SuccessResponse> mePassword(@RequestBody Map<String, String> body,
                                                                    CurrentUser user) {
-        // mock：仅做最低校验
         String oldPwd = body == null ? null : body.get("oldPassword");
         String newPwd = body == null ? null : body.get("newPassword");
-        if (oldPwd == null || newPwd == null || newPwd.length() < 8) {
-            return ApiResponse.error(400, "密码不合规");
+        if (oldPwd == null || oldPwd.isEmpty()) {
+            return ApiResponse.error(400, "旧密码不能为空");
         }
+        if (newPwd == null || newPwd.length() < 8 || newPwd.length() > 20) {
+            return ApiResponse.error(400, "新密码长度需在8-20位");
+        }
+        UserEntity u = userService.getById(user.userId());
+        if (u == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
+        }
+        if (!userService.checkPassword(oldPwd, u.getPasswordHash())) {
+            return ApiResponse.error(400, "旧密码不正确");
+        }
+        userService.updatePassword(user.userId(), newPwd);
         return ApiResponse.ok(new CommonResponses.SuccessResponse(true));
     }
 
-    private static final Map<Long, Map<String, Object>> SETTINGS_STORE = new HashMap<>();
-
-    /**
-     * 获取个人偏好设置
-     * TODO(real): 接入 UserSettingService（持久化到 DB / Redis）
-     */
     @GetMapping("/me/settings")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<Map<String, Object>> getSettings(CurrentUser user) {
         Map<String, Object> defaults = defaultSettings();
-        Map<String, Object> stored = user == null || user.userId() == null
-                ? null : SETTINGS_STORE.get(user.userId());
-        if (stored != null) defaults.putAll(stored);
+        if (user != null && user.userId() != null) {
+            String json = redisTemplate.opsForValue().get(SETTINGS_KEY_PREFIX + user.userId());
+            if (json != null && !json.isBlank()) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> stored = new com.fasterxml.jackson.databind.ObjectMapper()
+                            .readValue(json, Map.class);
+                    defaults.putAll(stored);
+                } catch (Exception ignored) {}
+            }
+        }
         return ApiResponse.ok(defaults);
     }
 
-    /**
-     * 保存个人偏好设置
-     * TODO(real): 接入 UserSettingService
-     */
     @PutMapping("/me/settings")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<Map<String, Object>> putSettings(@RequestBody Map<String, Object> body,
                                                         CurrentUser user) {
         if (user != null && user.userId() != null && body != null) {
-            SETTINGS_STORE.put(user.userId(), new LinkedHashMap<>(body));
+            try {
+                String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(body);
+                redisTemplate.opsForValue().set(SETTINGS_KEY_PREFIX + user.userId(), json, Duration.ofDays(90));
+            } catch (Exception ignored) {}
         }
         return ApiResponse.ok(body == null ? defaultSettings() : body);
     }
@@ -322,12 +390,103 @@ public class MobileController {
         return d;
     }
 
+    // ==================== 公司信息 ====================
+
+    @GetMapping("/me/company")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<Map<String, Object>> companyInfo(CurrentUser user) {
+        TenantEntity tenant = tenantService.getById(user.tenantId());
+        if (tenant == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "租户不存在");
+        }
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("tenantName", tenant.getTenantName());
+        resp.put("shortCode", tenant.getShortCode());
+        resp.put("contactName", tenant.getContactName());
+        resp.put("phone", tenant.getPhone());
+        resp.put("logoUrl", tenant.getLogoUrl());
+        return ApiResponse.ok(resp);
+    }
+
+    // ==================== 发送记录 ====================
+
+    @GetMapping("/me/email-records")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<Map<String, Object>> myEmailRecords(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "20") Integer pageSize,
+            @RequestParam(required = false) Integer sendStatus,
+            CurrentUser user) {
+        LambdaQueryWrapper<EmailRecordEntity> qw = new LambdaQueryWrapper<>();
+        qw.eq(EmailRecordEntity::getOperatorId, user.userId());
+        if (sendStatus != null) {
+            qw.eq(EmailRecordEntity::getSendStatus, sendStatus);
+        }
+        qw.orderByDesc(EmailRecordEntity::getCreatedAt);
+        var page = emailRecordMapper.selectPage(
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(pageNum, pageSize), qw);
+        List<Map<String, Object>> records = new ArrayList<>();
+        for (EmailRecordEntity e : page.getRecords()) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", e.getId());
+            m.put("receiverEmail", e.getReceiverEmail());
+            m.put("subject", e.getSubject());
+            m.put("sendStatus", e.getSendStatus());
+            m.put("failReason", e.getFailReason());
+            m.put("sentTime", e.getSentTime());
+            m.put("createdAt", e.getCreatedAt());
+            records.add(m);
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("records", records);
+        result.put("total", page.getTotal());
+        result.put("pageNum", pageNum);
+        result.put("pageSize", pageSize);
+        return ApiResponse.ok(result);
+    }
+
+    @GetMapping("/me/sms-records")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<Map<String, Object>> mySmsRecords(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "20") Integer pageSize,
+            @RequestParam(required = false) Integer sendStatus,
+            @RequestParam(required = false) String smsType,
+            CurrentUser user) {
+        LambdaQueryWrapper<SmsRecordEntity> qw = new LambdaQueryWrapper<>();
+        qw.eq(SmsRecordEntity::getOperatorId, user.userId());
+        if (sendStatus != null) {
+            qw.eq(SmsRecordEntity::getSendStatus, sendStatus);
+        }
+        if (smsType != null && !smsType.isBlank()) {
+            qw.eq(SmsRecordEntity::getSmsType, smsType);
+        }
+        qw.orderByDesc(SmsRecordEntity::getCreatedAt);
+        var page = smsRecordMapper.selectPage(
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(pageNum, pageSize), qw);
+        List<Map<String, Object>> records = new ArrayList<>();
+        for (SmsRecordEntity s : page.getRecords()) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", s.getId());
+            m.put("receiverPhone", s.getReceiverPhone());
+            m.put("smsType", s.getSmsType());
+            m.put("content", s.getContent());
+            m.put("sendStatus", s.getSendStatus());
+            m.put("failReason", s.getFailReason());
+            m.put("sentTime", s.getSentTime());
+            m.put("createdAt", s.getCreatedAt());
+            records.add(m);
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("records", records);
+        result.put("total", page.getTotal());
+        result.put("pageNum", pageNum);
+        result.put("pageSize", pageSize);
+        return ApiResponse.ok(result);
+    }
+
     // ==================== 认证 ====================
 
-    /**
-     * 移动端 Token 刷新
-     * 复用 AuthService.refreshToken，与 PC 端 /auth/refresh 行为一致
-     */
     @PostMapping("/auth/refresh")
     public ApiResponse<?> refreshToken(@RequestBody Map<String, String> body) {
         String refreshToken = body == null ? null : body.get("refreshToken");
