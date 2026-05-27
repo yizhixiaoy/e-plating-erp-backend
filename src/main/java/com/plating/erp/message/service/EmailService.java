@@ -14,8 +14,9 @@ public interface EmailService {
      * @param toEmail 收件人邮箱
      * @param subject 邮件主题
      * @param content 邮件内容
+     * @param operatorId 操作人用户ID
      */
-    void sendEmailAsync(Long tenantId, Long userId, Long noticeId, String senderEmail, String toEmail, String subject, String content);
+    void sendEmailAsync(Long tenantId, Long userId, Long noticeId, String senderEmail, String toEmail, String subject, String content, Long operatorId);
     
     /**
      * 发送新用户初始化密码邮件
@@ -62,4 +63,17 @@ public interface EmailService {
     void sendMessageNotificationEmail(Long userId, String email, String realName,
                                       String messageTitle, String messageType, String content,
                                       Long tenantId, Long noticeId, Long creatorId);
+
+    /**
+     * 发送密码重置通知邮件（管理员重置密码后通知用户）
+     * @param userId 用户ID（接收人）
+     * @param email 用户邮箱
+     * @param realName 用户姓名
+     * @param username 用户名
+     * @param plainPassword 明文密码
+     * @param tenantId 租户ID
+     * @param operatorId 操作人ID（执行重置的管理员）
+     */
+    void sendResetPasswordEmail(Long userId, String email, String realName,
+                                String username, String plainPassword, Long tenantId, Long operatorId);
 }

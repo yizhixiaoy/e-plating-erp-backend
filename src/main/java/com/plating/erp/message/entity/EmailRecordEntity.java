@@ -22,6 +22,7 @@ public class EmailRecordEntity {
     private Integer sendStatus;
     private String failReason;
     private Integer retryCount;
+    private Long operatorId;
     private LocalDateTime sentTime;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

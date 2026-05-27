@@ -116,6 +116,20 @@ public class SmsServiceImpl implements SmsService {
         sendSmsAsync(phone, smsType, content, tenantId, operatorId, operatorId);
     }
 
+    @Override
+    public void sendResetPasswordSms(String phone, String realName, String newPassword,
+                                     Long tenantId, Long receiverUserId, Long operatorId) {
+        if (!smsEnabled) {
+            log.debug("短信功能未启用,跳过重置密码短信: phone={}", phone);
+            return;
+        }
+
+        String content = "{\"realName\":\"" + (realName != null ? realName : "")
+                + "\",\"password\":\"" + newPassword + "\"}";
+        sendSmsAsync(phone, "RESET_PASSWORD_NOTIFY", content, tenantId, receiverUserId, operatorId);
+        log.info("重置密码短信已加入发送队列: phone={}", phone);
+    }
+
     /**
      * 构建验证码短信内容
      * 当使用模板发送时，content字段作为模板参数记录

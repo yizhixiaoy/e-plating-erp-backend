@@ -21,6 +21,7 @@ import com.plating.erp.iam.service.UserService;
 import com.plating.erp.iam.vo.UserListVo;
 import com.plating.erp.iam.vo.UserVo;
 import com.plating.erp.message.service.EmailService;
+import com.plating.erp.message.service.SmsService;
 import com.plating.erp.platform.service.TenantService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -63,6 +64,7 @@ public class UserController {
     private final CredentialRevocationService credentialRevocationService;
     private final TenantService tenantService;
     private final EmailService emailService;
+    private final SmsService smsService;
 
     public UserController(UserService userService,
                           UserMapper userMapper,
@@ -71,7 +73,8 @@ public class UserController {
                           RefreshTokenService refreshTokenService,
                           CredentialRevocationService credentialRevocationService,
                           TenantService tenantService,
-                          EmailService emailService) {
+                          EmailService emailService,
+                          SmsService smsService) {
         this.userService = userService;
         this.userMapper = userMapper;
         this.deptMapper = deptMapper;
@@ -80,6 +83,7 @@ public class UserController {
         this.credentialRevocationService = credentialRevocationService;
         this.tenantService = tenantService;
         this.emailService = emailService;
+        this.smsService = smsService;
     }
 
     /**
@@ -482,8 +486,40 @@ public class UserController {
             log.info("已清除用户缓存和令牌, userId={}", userId);
         }
 
+        // 发送密码重置通知邮件（使用独立的重置密码模板，区别于新用户注册模板）
+        boolean emailSent = false;
+        if (u.getEmail() != null && !u.getEmail().isBlank()) {
+            try {
+                emailService.sendResetPasswordEmail(
+                    userId,
+                    u.getEmail(),
+                    u.getRealName(),
+                    u.getUsername(),
+                    plain,
+                    tid,
+                    SecurityUtils.currentUser().userId()
+                );
+                emailSent = true;
+                log.info("密码重置通知邮件已加入发送队列: userId={}, email={}", userId, u.getEmail());
+            } catch (Exception e) {
+                log.error("发送密码重置通知邮件异常: userId={}, email={}", userId, u.getEmail(), e);
+            }
+        }
+
+        // 发送密码重置通知短信
+        boolean smsSent = false;
+        if (u.getPhone() != null && !u.getPhone().isBlank()) {
+            try {
+                smsService.sendResetPasswordSms(u.getPhone(), u.getRealName(), plain, tid, userId, SecurityUtils.currentUser().userId());
+                smsSent = true;
+                log.info("密码重置通知短信已加入发送队列: userId={}, phone={}", userId, u.getPhone());
+            } catch (Exception e) {
+                log.error("发送密码重置通知短信异常: userId={}, phone={}", userId, u.getPhone(), e);
+            }
+        }
+
         log.info("密码重置成功, userId={}", userId);
-        return ApiResponse.ok(new CommonResponses.ResetPasswordResponse(userId, plain, true, tid != null));
+        return ApiResponse.ok(new CommonResponses.ResetPasswordResponse(userId, plain, true, tid != null, emailSent, smsSent));
     }
 
     /**

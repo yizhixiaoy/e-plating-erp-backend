@@ -54,5 +54,5 @@ public interface MessageService {
 
     void readNotice(Long noticeId, Long userId);
 
-    Page<EmailRecordEntity> emails(int pageNum, int pageSize, Integer sendStatus);
+    Page<EmailRecordEntity> emails(int pageNum, int pageSize, Integer sendStatus, Long operatorId);
 }

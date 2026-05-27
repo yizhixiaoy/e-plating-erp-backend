@@ -54,17 +54,17 @@ public class EmailServiceImpl implements EmailService {
     
     @Override
     @Async("emailTaskExecutor")
-    public void sendEmailAsync(Long tenantId, Long userId, Long noticeId, String senderEmail, String toEmail, String subject, String content) {
+    public void sendEmailAsync(Long tenantId, Long userId, Long noticeId, String senderEmail, String toEmail, String subject, String content, Long operatorId) {
         if (!mailEnabled) {
             log.debug("邮件功能未启用,跳过发送: to={}", toEmail);
             return;
         }
-        
+
         if (toEmail == null || toEmail.isBlank()) {
             log.warn("收件人邮箱为空,跳过发送");
             return;
         }
-        
+
         // 创建发送记录
         EmailRecordEntity record = new EmailRecordEntity();
         record.setTenantId(tenantId);
@@ -74,6 +74,7 @@ public class EmailServiceImpl implements EmailService {
         record.setReceiverEmail(toEmail);
         record.setSubject(subject);
         record.setContent(content);
+        record.setOperatorId(operatorId);
         record.setSendStatus(0); // 待发送
         record.setRetryCount(0);
         record.setCreatedAt(LocalDateTime.now());
@@ -134,13 +135,45 @@ public class EmailServiceImpl implements EmailService {
                     .replace("{tenantName}", tenantName);
             
             String senderEmail = resolveSenderEmail(creatorId);
-            sendEmailAsync(tenantId != null ? tenantId : 0L, userId, null, senderEmail, email, subject, contentTemplate);
+            sendEmailAsync(tenantId != null ? tenantId : 0L, userId, null, senderEmail, email, subject, contentTemplate, creatorId);
             log.info("新用户密码邮件已加入发送队列: userId={}, email={}", userId, email);
         } catch (Exception e) {
             log.error("发送新用户密码邮件异常: userId={}, email={}", userId, email, e);
         }
     }
-    
+
+    @Override
+    public void sendResetPasswordEmail(Long userId, String email, String realName,
+                                       String username, String plainPassword, Long tenantId, Long operatorId) {
+        if (!mailEnabled) {
+            log.debug("邮件功能未启用,跳过重置密码邮件: to={}", email);
+            return;
+        }
+
+        try {
+            // 从字典获取重置密码专用邮件模板（区别于新用户注册模板）
+            String subject = getDictValue("email_template", "重置密码邮件主题");
+            String contentTemplate = getDictValue("email_template", "重置密码邮件内容");
+
+            // 模板变量替换
+            String tenantName = getDictValue("email_template", "租户名称");
+            if (tenantName.isBlank()) tenantName = "电镀ERP系统";
+            subject = subject.replace("{tenantName}", tenantName);
+            contentTemplate = contentTemplate
+                    .replace("{realName}", realName != null ? realName : "用户")
+                    .replace("{username}", username)
+                    .replace("{password}", plainPassword)
+                    .replace("{loginUrl}", loginUrl)
+                    .replace("{tenantName}", tenantName);
+
+            String senderEmail = resolveSenderEmail(operatorId);
+            sendEmailAsync(tenantId != null ? tenantId : 0L, userId, null, senderEmail, email, subject, contentTemplate, operatorId);
+            log.info("重置密码邮件已加入发送队列: userId={}, email={}", userId, email);
+        } catch (Exception e) {
+            log.error("发送重置密码邮件异常: userId={}, email={}", userId, email, e);
+        }
+    }
+
     @Override
     public void sendTodoNotificationEmail(Long userId, String email, String realName,
                                          String todoTitle, String todoType, Integer priority, String content,
@@ -168,7 +201,7 @@ public class EmailServiceImpl implements EmailService {
                     .replace("{content}", content != null ? content : "");
             
             String senderEmail = resolveSenderEmail(creatorId);
-            sendEmailAsync(tenantId != null ? tenantId : 0L, userId, relatedId, senderEmail, email, subject, contentTemplate);
+            sendEmailAsync(tenantId != null ? tenantId : 0L, userId, relatedId, senderEmail, email, subject, contentTemplate, creatorId);
             log.info("待办通知邮件已加入发送队列: userId={}, email={}", userId, email);
         } catch (Exception e) {
             log.error("发送待办通知邮件异常: userId={}, email={}", userId, email, e);
@@ -201,7 +234,7 @@ public class EmailServiceImpl implements EmailService {
                     .replace("{content}", content != null ? content : "");
             
             String senderEmail = resolveSenderEmail(creatorId);
-            sendEmailAsync(tenantId != null ? tenantId : 0L, userId, noticeId, senderEmail, email, subject, contentTemplate);
+            sendEmailAsync(tenantId != null ? tenantId : 0L, userId, noticeId, senderEmail, email, subject, contentTemplate, creatorId);
             log.info("消息通知邮件已加入发送队列: userId={}, email={}", userId, email);
         } catch (Exception e) {
             log.error("发送消息通知邮件异常: userId={}, email={}", userId, email, e);

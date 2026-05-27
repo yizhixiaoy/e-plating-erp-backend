@@ -572,10 +572,13 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public Page<EmailRecordEntity> emails(int pageNum, int pageSize, Integer sendStatus) {
+    public Page<EmailRecordEntity> emails(int pageNum, int pageSize, Integer sendStatus, Long operatorId) {
         LambdaQueryWrapper<EmailRecordEntity> wrapper = new LambdaQueryWrapper<>();
         if (sendStatus != null) {
             wrapper.eq(EmailRecordEntity::getSendStatus, sendStatus);
+        }
+        if (operatorId != null) {
+            wrapper.eq(EmailRecordEntity::getOperatorId, operatorId);
         }
         wrapper.orderByDesc(EmailRecordEntity::getId);
         return emailRecordMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);

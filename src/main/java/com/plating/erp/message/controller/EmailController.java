@@ -6,6 +6,8 @@ import com.plating.erp.common.api.ErrorCode;
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.common.security.SecurityUtils;
 import com.plating.erp.audit.annotation.AuditLog;
+import com.plating.erp.iam.entity.UserEntity;
+import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.message.entity.EmailRecordEntity;
 import com.plating.erp.message.mapper.EmailRecordMapper;
 import com.plating.erp.message.service.MessageService;
@@ -16,6 +18,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 邮件管理控制器（独立菜单页）
@@ -27,15 +31,54 @@ public class EmailController {
 
     private final EmailRecordMapper emailRecordMapper;
     private final MessageService messageService;
+    private final UserMapper userMapper;
 
     /** 分页查询邮件列表 */
     @GetMapping
     @PreAuthorize("@authz.hasPerm('message:email:view')")
     public ApiResponse<?> list(@RequestParam(defaultValue = "1") Integer pageNum,
                                @RequestParam(defaultValue = "20") Integer pageSize,
-                               @RequestParam(required = false) Integer sendStatus) {
-        var page = messageService.emails(pageNum, pageSize, sendStatus);
-        return ApiResponse.ok(new PageResult<>(page.getRecords(), page.getTotal()));
+                               @RequestParam(required = false) Integer sendStatus,
+                               @RequestParam(required = false) Long operatorId) {
+        var page = messageService.emails(pageNum, pageSize, sendStatus, operatorId);
+        List<EmailRecordEntity> records = page.getRecords();
+        // 批量解析操作人姓名
+        Map<Long, String> operatorNames = resolveOperatorNames(records);
+        List<Map<String, Object>> enriched = records.stream().map(r -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", r.getId());
+            m.put("tenantId", r.getTenantId());
+            m.put("receiverUserId", r.getReceiverUserId());
+            m.put("noticeId", r.getNoticeId());
+            m.put("senderEmail", r.getSenderEmail());
+            m.put("receiverEmail", r.getReceiverEmail());
+            m.put("subject", r.getSubject());
+            m.put("content", r.getContent());
+            m.put("sendStatus", r.getSendStatus());
+            m.put("failReason", r.getFailReason());
+            m.put("retryCount", r.getRetryCount());
+            m.put("operatorId", r.getOperatorId());
+            m.put("operatorName", operatorNames.get(r.getOperatorId()));
+            m.put("sentTime", r.getSentTime());
+            m.put("createdAt", r.getCreatedAt());
+            m.put("updatedAt", r.getUpdatedAt());
+            return m;
+        }).collect(Collectors.toList());
+        return ApiResponse.ok(new PageResult<>(enriched, page.getTotal()));
+    }
+
+    private Map<Long, String> resolveOperatorNames(List<EmailRecordEntity> records) {
+        Set<Long> ids = records.stream()
+                .map(EmailRecordEntity::getOperatorId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) return Collections.emptyMap();
+        List<UserEntity> users = userMapper.selectBatchIds(ids);
+        return users.stream().collect(Collectors.toMap(
+                UserEntity::getId,
+                u -> u.getRealName() != null ? u.getRealName() : u.getUsername(),
+                (a, b) -> a
+        ));
     }
 
     /** 查看邮件详情 */

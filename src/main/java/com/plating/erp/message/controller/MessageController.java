@@ -260,7 +260,7 @@ public class MessageController {
     public ApiResponse<?> emailRecords(@RequestParam(defaultValue = "1") Integer pageNum,
                                        @RequestParam(defaultValue = "20") Integer pageSize,
                                        @RequestParam(required = false) Integer sendStatus) {
-        var page = messageService.emails(pageNum, pageSize, sendStatus);
+        var page = messageService.emails(pageNum, pageSize, sendStatus, null);
         return ApiResponse.ok(new PageResult<>(page.getRecords(), page.getTotal()));
     }
 

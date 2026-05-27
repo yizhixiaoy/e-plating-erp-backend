@@ -40,7 +40,7 @@ public class CryptoResponseAdvice implements ResponseBodyAdvice<Object> {
     /** 需要加密的响应字段名 */
     private static final Set<String> SENSITIVE_FIELDS = Set.of(
             "phone", "email", "realName", "username",
-            "companyPhone", "leaderName"
+            "companyPhone", "leaderName", "newPassword"
     );
 
     private final SessionKeyService sessionKeyService;
