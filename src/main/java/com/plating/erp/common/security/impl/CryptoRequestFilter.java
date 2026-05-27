@@ -12,10 +12,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.io.BufferedReader;
@@ -32,8 +30,6 @@ import java.util.stream.Collectors;
  * 请求字段解密 Filter
  * 在 JwtAuthenticationFilter 之后执行，读取加密的请求体字段并解密
  */
-@Component
-@Order(20) // 在 JwtAuthenticationFilter（默认 order）之后
 public class CryptoRequestFilter implements Filter {
 
     private static final Logger log = LoggerFactory.getLogger(CryptoRequestFilter.class);
@@ -56,6 +52,7 @@ public class CryptoRequestFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletRequest httpReq = (HttpServletRequest) request;
+        String path = httpReq.getRequestURI();
 
         // 跳过非 JSON 请求
         String contentType = httpReq.getContentType();
@@ -67,6 +64,7 @@ public class CryptoRequestFilter implements Filter {
         // 获取 sessionKey
         SecretKeySpec key = getSessionKey();
         if (key == null) {
+            log.debug("[crypto] sessionKey not found, skip decrypt, path={}", path);
             chain.doFilter(request, response);
             return;
         }
@@ -82,9 +80,10 @@ public class CryptoRequestFilter implements Filter {
             JsonNode root = MAPPER.readTree(body);
             JsonNode decrypted = decryptFields(root, key);
             String newBody = MAPPER.writeValueAsString(decrypted);
+            log.debug("[crypto] decrypt success, path={}", path);
             chain.doFilter(new CachedBodyRequest(httpReq, newBody), response);
         } catch (Exception e) {
-            log.warn("[crypto] request decrypt failed, pass through", e);
+            log.warn("[crypto] request decrypt failed, path={}", path, e);
             chain.doFilter(new CachedBodyRequest(httpReq, body), response);
         }
     }
@@ -97,8 +96,12 @@ public class CryptoRequestFilter implements Filter {
                 if (raw != null) {
                     return CryptoUtil.parseKey(raw);
                 }
+                log.debug("[crypto] sessionKey not found in redis, userId={}, tenantId={}", user.userId(), user.tenantId());
+            } else {
+                log.debug("[crypto] no authenticated user in SecurityContext");
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            log.debug("[crypto] getSessionKey error", e);
         }
         return null;
     }

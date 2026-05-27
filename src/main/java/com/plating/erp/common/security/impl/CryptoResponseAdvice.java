@@ -33,7 +33,9 @@ import java.util.Set;
 public class CryptoResponseAdvice implements ResponseBodyAdvice<Object> {
 
     private static final Logger log = LoggerFactory.getLogger(CryptoResponseAdvice.class);
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     /** 需要加密的响应字段名 */
     private static final Set<String> SENSITIVE_FIELDS = Set.of(

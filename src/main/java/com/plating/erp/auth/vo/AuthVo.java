@@ -102,4 +102,15 @@ public class AuthVo {
             @NotBlank(message = "newPassword不能为空") @Size(min = 8, max = 20, message = "密码长度需在8-20") String newPassword
     ) {
     }
+
+    public record BindPhoneSendCodeReq(
+            @NotBlank(message = "phone不能为空") @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone
+    ) {
+    }
+
+    public record BindPhoneReq(
+            @NotBlank(message = "phone不能为空") @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,
+            @NotBlank(message = "smsCode不能为空") @Size(min = 4, max = 8, message = "验证码长度不合法") String smsCode
+    ) {
+    }
 }

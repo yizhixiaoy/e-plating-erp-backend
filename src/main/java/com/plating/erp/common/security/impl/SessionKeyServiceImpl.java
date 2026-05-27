@@ -42,4 +42,9 @@ public class SessionKeyServiceImpl implements SessionKeyService {
     public void remove(Long userId, Long tenantId) {
         redisTemplate.delete(key(userId, tenantId));
     }
+
+    @Override
+    public void touch(Long userId, Long tenantId) {
+        redisTemplate.expire(key(userId, tenantId), Duration.ofSeconds(expireSeconds));
+    }
 }

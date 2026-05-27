@@ -354,7 +354,19 @@ public class AuditLogAspect {
             
             // 3. 如果是POJO，使用反射获取getter
             String getterName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-            java.lang.reflect.Method getter = obj.getClass().getMethod(getterName);
+            java.lang.reflect.Method getter;
+            try {
+                // 先尝试传统JavaBean风格的getter方法
+                getter = obj.getClass().getMethod(getterName);
+            } catch (NoSuchMethodException e) {
+                // 如果找不到getter，尝试Record风格的访问器方法（直接使用字段名）
+                try {
+                    getter = obj.getClass().getMethod(fieldName);
+                } catch (NoSuchMethodException ex) {
+                    log.debug("字段不存在: {}.{}", obj.getClass().getSimpleName(), fieldName);
+                    return null;
+                }
+            }
             Object value = getter.invoke(obj);
             return value != null ? objectMapper.writeValueAsString(value) : null;
             

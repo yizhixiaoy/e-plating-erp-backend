@@ -8,6 +8,10 @@ spring:
         enabled: false
       web-stat-filter:
         enabled: false
+  data:
+    redis:
+      host: ${REDIS_HOST:test-redis}
+      port: ${REDIS_PORT:6379}
   mail:
     host: ${MAIL_HOST:localhost}  # 测试环境SMTP服务器
     port: ${MAIL_PORT:25}
@@ -19,6 +23,8 @@ spring:
           auth: ${MAIL_SMTP_AUTH:false}
           starttls:
             enable: ${MAIL_STARTTLS_ENABLED:false}
+          ssl:
+            enable: ${MAIL_SSL_ENABLED:false}  # 测试环境禁用SSL,覆盖base配置
 
 # 测试环境OSS配置
 oss:
@@ -52,7 +58,25 @@ oss:
 
 # 测试环境邮件配置
 app:
+  jwt:
+    secret: ${JWT_SECRET:test-jwt-secret-at-least-32-characters}
+    expire-seconds: 7200
+    refresh-expire-seconds: 604800
+  authz:
+    cache-seconds: ${AUTHZ_CACHE_SECONDS:120}
+  message:
+    publish-check-ms: ${MESSAGE_PUBLISH_CHECK_MS:30000}
   mail:
     enabled: ${MAIL_ENABLED:false}  # 测试环境默认禁用
     from: ${MAIL_FROM:noreply@zhiduyun.com}
     login-url: ${MAIL_LOGIN_URL:http://test.zhiduyun.com/login}
+  # 短信配置(测试环境默认禁用)
+  sms:
+    enabled: ${SMS_ENABLED:false}
+    provider: ${SMS_PROVIDER:aliyun}
+    aliyun:
+      access-key-id: ${SMS_ACCESS_KEY_ID:}
+      access-key-secret: ${SMS_ACCESS_KEY_SECRET:}
+      sign-name: ${SMS_SIGN_NAME:}
+      template-code: ${SMS_TEMPLATE_CODE:}
+      endpoint: ${SMS_ENDPOINT:https://dysmsapi.aliyuncs.com}

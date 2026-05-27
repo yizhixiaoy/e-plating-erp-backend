@@ -15,6 +15,10 @@ spring:
         enabled: true
         url-pattern: /*
         exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*,/actuator/*,/swagger-ui*,/v3/api-docs*"
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   mail:
     host: ${MAIL_HOST:localhost}  # 本地SMTP服务器
     port: ${MAIL_PORT:25}  # 本地SMTP通常使用25端口
@@ -26,6 +30,8 @@ spring:
           auth: ${MAIL_SMTP_AUTH:false}  # 本地SMTP通常不需要认证
           starttls:
             enable: ${MAIL_STARTTLS_ENABLED:false}  # 本地SMTP通常不需要TLS
+          ssl:
+            enable: ${MAIL_SSL_ENABLED:false}  # 开发环境禁用SSL,覆盖base配置
 
 
 # 开发环境OSS配置（默认使用MinIO本地或腾讯云测试环境）
@@ -61,7 +67,25 @@ oss:
 # 开发环境邮件配置（本地SMTP服务器示例）
 # 如果邮箱和服务在同一台机器,可使用本地SMTP服务如Postfix/hMailServer
 app:
+  jwt:
+    secret: ${JWT_SECRET:dev-jwt-secret-at-least-32-characters}
+    expire-seconds: 7200
+    refresh-expire-seconds: 604800
+  authz:
+    cache-seconds: ${AUTHZ_CACHE_SECONDS:300}
+  message:
+    publish-check-ms: ${MESSAGE_PUBLISH_CHECK_MS:10000}
   mail:
     enabled: ${MAIL_ENABLED:false}  # 开发环境默认禁用,需要时手动开启
     from: ${MAIL_FROM:noreply@zhiduyun.com}
     login-url: ${MAIL_LOGIN_URL:http://localhost:5173/login}
+  # 短信配置(开发环境默认禁用)
+  sms:
+    enabled: ${SMS_ENABLED:false}
+    provider: ${SMS_PROVIDER:aliyun}
+    aliyun:
+      access-key-id: ${SMS_ACCESS_KEY_ID:}
+      access-key-secret: ${SMS_ACCESS_KEY_SECRET:}
+      sign-name: ${SMS_SIGN_NAME:}
+      template-code: ${SMS_TEMPLATE_CODE:}
+      endpoint: ${SMS_ENDPOINT:https://dysmsapi.aliyuncs.com}

@@ -5,7 +5,7 @@ public interface VerificationCodeService {
 
     void validateCode(String key, String code);
 
-    void sendSmsCode(String phone, String scene);
+    void sendSmsCode(String phone, String scene, Long operatorId, Long tenantId);
 
     void sendEmailCode(String email, String scene);
 }

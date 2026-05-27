@@ -3,6 +3,7 @@ package com.plating.erp.auth.service.impl;
 import com.plating.erp.auth.service.VerificationCodeService;
 import com.plating.erp.common.api.BizException;
 import com.plating.erp.common.api.ErrorCode;
+import com.plating.erp.message.service.SmsService;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +13,12 @@ import java.util.Random;
 @Service
 public class VerificationCodeServiceImpl implements VerificationCodeService {
     private final RedisTemplate<String, String> redisTemplate;
+    private final SmsService smsService;
 
-    public VerificationCodeServiceImpl(RedisTemplate<String, String> redisTemplate) {
+    public VerificationCodeServiceImpl(RedisTemplate<String, String> redisTemplate,
+                                       SmsService smsService) {
         this.redisTemplate = redisTemplate;
+        this.smsService = smsService;
     }
 
     @Override
@@ -38,12 +42,11 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
     }
 
     @Override
-    public void sendSmsCode(String phone, String scene) {
+    public void sendSmsCode(String phone, String scene, Long operatorId,Long tenantId) {
         String key = "sms:code:" + phone + ":" + scene;
         checkSendLimit(phone, scene, "SMS");
         String code = generateCode(key);
-        // TODO: 集成短信发送服务
-        System.out.println("发送短信验证码 " + code + " 到 " + phone);
+        smsService.sendVerificationCodeSms(phone, code, scene, operatorId, tenantId);
     }
 
     @Override
@@ -72,7 +75,7 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
         Random random = new Random();
         StringBuilder sb = new StringBuilder(length);
         // 字符集：数字0-9 + 大写字母A-Z（排除易混淆字符：0/O, 1/I/l）
-        String chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+        String chars = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
         for (int i = 0; i < length; i++) {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }

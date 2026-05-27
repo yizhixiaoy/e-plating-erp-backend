@@ -72,6 +72,19 @@ public class TenantServiceImpl implements TenantService {
     }
 
     @Override
+    public long count() {
+        return tenantMapper.selectCount(new LambdaQueryWrapper<TenantEntity>()
+                .eq(TenantEntity::getStatus, 0));
+    }
+
+    @Override
+    public long countSince(java.time.LocalDateTime since) {
+        return tenantMapper.selectCount(new LambdaQueryWrapper<TenantEntity>()
+                .ge(TenantEntity::getCreatedAt, since)
+                .eq(TenantEntity::getStatus, 0));
+    }
+
+    @Override
     public List<TenantEntity> listAll() {
         return tenantMapper.selectList(
                 new LambdaQueryWrapper<TenantEntity>()

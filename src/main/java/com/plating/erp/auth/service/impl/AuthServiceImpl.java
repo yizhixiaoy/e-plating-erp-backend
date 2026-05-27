@@ -16,6 +16,7 @@ import com.plating.erp.common.api.ErrorCode;
 import com.plating.erp.common.security.JwtTokenService;
 import com.plating.erp.common.security.PermissionMapper;
 import com.plating.erp.common.security.RefreshTokenService;
+import com.plating.erp.common.security.SecurityUtils;
 import com.plating.erp.common.security.SessionKeyService;
 import com.plating.erp.common.util.FileUploadUtils;
 import com.plating.erp.iam.entity.DeptEntity;
@@ -596,7 +597,11 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void sendSmsCode(String phone, String tenantCode, String scene) {
-        verificationCodeService.sendSmsCode(phone, scene);
+        // 登录/忘记密码前发送验证码，此时无操作人上下文，传null
+        var me = SecurityUtils.currentUser();
+        Long operatorId = me != null ? me.userId() : null;
+        Long tenantId = me != null ? me.tenantId() : null;
+        verificationCodeService.sendSmsCode(phone, scene, operatorId, tenantId);
     }
 
     @Override
@@ -643,7 +648,10 @@ public class AuthServiceImpl implements AuthService {
         // 生成新的AccessToken
         List<String> roles = resolveUserRoles(user.getId(), tenantId, user.getUserType());
         String newAccessToken = jwtTokenService.createToken(user.getId(), tenantId, user.getUsername(), roles, user.getUserType());
-        
+
+        // 同步刷新 sessionKey 的过期时间，避免 sessionKey 过期后解密失败
+        sessionKeyService.touch(user.getId(), tenantId);
+
         log.info("Token刷新成功, userId={}, username={}", userId, user.getUsername());
         return newAccessToken;
     }
@@ -824,5 +832,49 @@ public class AuthServiceImpl implements AuthService {
         // 更新密码 - 使用 UserService 的统一方法
         userService.updatePassword(userId, payload.newPassword());
         log.info("用户密码修改成功, userId={}", userId);
+    }
+
+    @Override
+    public void sendBindPhoneCode(Long userId, String phone, Long tenantId) {
+        log.info("发送绑定手机验证码, userId={}, phone={},tenantId={}", userId, phone,tenantId);
+
+        UserEntity user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "用户不存在");
+        }
+
+        // 检查手机号是否与当前绑定的手机号相同
+        if (phone.equals(user.getPhone())) {
+            log.warn("手机号未变化, userId={}, phone={}", userId, phone);
+            throw new BizException(ErrorCode.BAD_REQUEST, "该手机号与当前绑定的手机号相同，无需修改");
+        }
+
+        // 发送验证码，场景为 BIND_PHONE，此时有操作人上下文
+        verificationCodeService.sendSmsCode(phone, "BIND_PHONE", userId, tenantId);
+        log.info("绑定手机验证码发送成功, userId={}, phone={}", userId, phone);
+    }
+
+    @Override
+    public void bindPhone(Long userId, AuthVo.BindPhoneReq payload) {
+        log.info("绑定手机号, userId={}, phone={}", userId, payload.phone());
+
+        UserEntity user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "用户不存在");
+        }
+
+        // 检查手机号是否与当前绑定的手机号相同
+        if (payload.phone().equals(user.getPhone())) {
+            log.warn("手机号未变化, userId={}, phone={}", userId, payload.phone());
+            throw new BizException(ErrorCode.BAD_REQUEST, "该手机号与当前绑定的手机号相同，无需修改");
+        }
+
+        // 验证短信验证码
+        verificationCodeService.validateCode("sms:code:" + payload.phone() + ":BIND_PHONE", payload.smsCode());
+
+        // 更新手机号
+        user.setPhone(payload.phone());
+        userMapper.updateById(user);
+        log.info("手机号绑定成功, userId={}, phone={}", userId, payload.phone());
     }
 }

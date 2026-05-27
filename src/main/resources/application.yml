@@ -82,6 +82,16 @@ app:
     enabled: ${MAIL_ENABLED:true}
     from: ${MAIL_FROM:noreply@example.com}
     login-url: ${MAIL_LOGIN_URL:http://localhost:5173/login}
+  # 短信配置(默认禁用,通过环境变量启用)
+  sms:
+    enabled: ${SMS_ENABLED:false}
+    provider: ${SMS_PROVIDER:aliyun}
+    aliyun:
+      access-key-id: ${SMS_ACCESS_KEY_ID:}
+      access-key-secret: ${SMS_ACCESS_KEY_SECRET:}
+      sign-name: ${SMS_SIGN_NAME:}
+      template-code: ${SMS_TEMPLATE_CODE:}
+      endpoint: ${SMS_ENDPOINT:https://dysmsapi.aliyuncs.com}
 
 # OSS存储配置
 # provider: tencent(默认) / aliyun / minio

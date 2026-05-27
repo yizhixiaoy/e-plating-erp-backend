@@ -8,6 +8,10 @@ spring:
         enabled: false
       web-stat-filter:
         enabled: false
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
   mail:
     host: ${MAIL_HOST}  # 必须配置SMTP服务器地址
     port: ${MAIL_PORT:465}  # SSL端口465或STARTTLS端口587
@@ -54,7 +58,25 @@ oss:
 
 # 生产环境邮件配置（必须配置环境变量）
 app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expire-seconds: 7200
+    refresh-expire-seconds: 604800
+  authz:
+    cache-seconds: ${AUTHZ_CACHE_SECONDS:120}
+  message:
+    publish-check-ms: ${MESSAGE_PUBLISH_CHECK_MS:60000}
   mail:
     enabled: ${MAIL_ENABLED:true}  # 生产环境默认启用
     from: ${MAIL_FROM}  # 必须配置,如 noreply@zhiduyun.com
     login-url: ${MAIL_LOGIN_URL:https://www.zhiduyun.com/login}  # 生产环境登录地址
+  # 短信配置(生产环境默认启用,必须配置环境变量)
+  sms:
+    enabled: ${SMS_ENABLED:true}
+    provider: ${SMS_PROVIDER:aliyun}
+    aliyun:
+      access-key-id: ${SMS_ACCESS_KEY_ID}  # 必须配置
+      access-key-secret: ${SMS_ACCESS_KEY_SECRET}  # 必须配置
+      sign-name: ${SMS_SIGN_NAME}  # 必须配置
+      template-code: ${SMS_TEMPLATE_CODE}  # 必须配置
+      endpoint: ${SMS_ENDPOINT:https://dysmsapi.aliyuncs.com}

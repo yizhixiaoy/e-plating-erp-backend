@@ -18,4 +18,14 @@ public interface TenantService {
      * 查询所有租户（下拉选项用）
      */
     List<TenantEntity> listAll();
+
+    /**
+     * 统计租户数量
+     */
+    long count();
+
+    /**
+     * 统计指定时间之后创建的租户数量
+     */
+    long countSince(java.time.LocalDateTime since);
 }

@@ -31,4 +31,8 @@ public interface AuthService {
     void updateCurrentUser(Long userId, AuthVo.UpdateUserReq payload);
 
     void changePassword(Long userId, AuthVo.ChangePasswordReq payload);
+
+    void sendBindPhoneCode(Long userId, String phone,Long tenantId);
+
+    void bindPhone(Long userId, AuthVo.BindPhoneReq payload);
 }

@@ -457,7 +457,7 @@ public class UserController {
      */
     @PatchMapping("/{userId}/reset-password")
     @PreAuthorize("@authz.hasPerm('user:reset')")
-    @AuditLog(module = "用户管理", operateType = "RESET_PASSWORD", bizModule = "user", fieldName = "passwordHash")
+    @AuditLog(module = "用户管理", operateType = "RESET_PASSWORD", bizModule = "user", fieldName = "newPassword")
     public ApiResponse<CommonResponses.ResetPasswordResponse> resetPassword(@PathVariable Long userId) {
         log.info("重置用户密码, userId={}", userId);
 

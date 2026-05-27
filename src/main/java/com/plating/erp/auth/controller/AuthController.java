@@ -536,6 +536,37 @@ public class AuthController {
     }
 
     /**
+     * 发送绑定手机验证码
+     * @param payload 包含新手机号
+     * @return 发送结果
+     */
+    @PostMapping("/bind-phone/send-code")
+    @AuditLog(module = "个人信息", operateType = "SEND_BIND_PHONE_CODE", bizModule = "user", fieldName = "phone")
+    public ApiResponse<?> sendBindPhoneCode(@Valid @RequestBody AuthVo.BindPhoneSendCodeReq payload) {
+        var me = SecurityUtils.currentUser();
+        log.info("发送绑定手机验证码, userId={}, phone={}", me.userId(), payload.phone());
+        authService.sendBindPhoneCode(me.userId(), payload.phone(),me.tenantId());
+        log.info("绑定手机验证码发送成功, userId={}, phone={}", me.userId(), payload.phone());
+        return ApiResponse.ok(new AuthResponseVo.CodeSendResponse("SMS", payload.phone(), true));
+    }
+
+    /**
+     * 绑定手机号
+     * 验证短信验证码后绑定新手机号
+     * @param payload 包含新手机号和验证码
+     * @return 操作结果
+     */
+    @PostMapping("/bind-phone")
+    @AuditLog(module = "个人信息", operateType = "BIND_PHONE", bizModule = "user", fieldName = "phone")
+    public ApiResponse<?> bindPhone(@Valid @RequestBody AuthVo.BindPhoneReq payload) {
+        var me = SecurityUtils.currentUser();
+        log.info("绑定手机号, userId={}, phone={}", me.userId(), payload.phone());
+        authService.bindPhone(me.userId(), payload);
+        log.info("手机号绑定成功, userId={}, phone={}", me.userId(), payload.phone());
+        return ApiResponse.ok("手机号绑定成功");
+    }
+
+    /**
      * 获取用户动态路由和权限
      * 根据用户角色返回对应的菜单树和权限标识:
      * - 系统管理员: 返回所有平台级菜单 + 全部权限

@@ -12,6 +12,9 @@ public interface SessionKeyService {
     /** 获取会话密钥（hex），不存在返回 null */
     String get(Long userId, Long tenantId);
 
+    /** 刷新会话密钥的过期时间（使用配置的 TTL 重新计算） */
+    void touch(Long userId, Long tenantId);
+
     /** 移除会话密钥 */
     void remove(Long userId, Long tenantId);
 }

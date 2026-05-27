@@ -200,6 +200,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public long count() {
+        return userMapper.selectCount(new LambdaQueryWrapper<UserEntity>()
+                .eq(UserEntity::getStatus, 0)
+                .eq(UserEntity::getDeleted, 0));
+    }
+
+    @Override
+    public long countSince(java.time.LocalDateTime since) {
+        return userMapper.selectCount(new LambdaQueryWrapper<UserEntity>()
+                .ge(UserEntity::getCreatedAt, since)
+                .eq(UserEntity::getDeleted, 0));
+    }
+
+    @Override
     public List<UserRoleEntity> getUserRoles(Long tenantId, Long userId) {
         return userRoleMapper.selectList(
                 new LambdaQueryWrapper<UserRoleEntity>()

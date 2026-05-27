@@ -52,4 +52,11 @@ public interface UserService {
      * 获取用户绑定的角色列表
      */
     List<com.plating.erp.iam.entity.UserRoleEntity> getUserRoles(Long tenantId, Long userId);
+
+    long count();
+
+    /**
+     * 统计指定时间之后创建的用户数量
+     */
+    long countSince(java.time.LocalDateTime since);
 }
