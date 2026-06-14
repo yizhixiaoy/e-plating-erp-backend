@@ -76,6 +76,12 @@ app:
     cache-seconds: ${AUTHZ_CACHE_SECONDS:120}
   message:
     publish-check-ms: ${MESSAGE_PUBLISH_CHECK_MS:60000}
+  # AI助理配置
+  ai:
+    # Python AI服务地址
+    service-url: ${AI_SERVICE_URL:http://localhost:8000}
+    # 内部API Key（与Python端JAVA_API_KEY一致）
+    internal-api-key: ${AI_INTERNAL_API_KEY:807a4f25de31d333437d71f771bc2b30}
   # 邮件配置(默认禁用,通过环境变量启用)
   mail:
 #    enabled: ${MAIL_ENABLED:false}

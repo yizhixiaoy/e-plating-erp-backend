@@ -64,8 +64,8 @@ public class MenuServiceImpl implements MenuService {
         } else {
             // 租户用户：根据角色关联获取菜单（角色菜单通过 sys_role_menu 动态分配）
             log.info("租户用户获取角色菜单, userId={}, tenantId={}", user.userId(), user.tenantId());
-            menus = menuMapper.selectMenuTreeByUserId(user.userId());
-            permissions = menuMapper.selectPermsByUserId(user.userId());
+            menus = menuMapper.selectMenuTreeByUserId(user.userId(), user.tenantId());
+            permissions = menuMapper.selectPermsByUserId(user.userId(), user.tenantId());
         }
         
         // 构建菜单树

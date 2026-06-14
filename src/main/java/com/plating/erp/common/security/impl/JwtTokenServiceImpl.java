@@ -25,12 +25,13 @@ public class JwtTokenServiceImpl implements JwtTokenService {
     }
 
     @Override
-    public String createToken(Long userId, Long tenantId, String username, List<String> roles, Integer userType) {
+    public String createToken(Long userId, Long tenantId, String username, List<String> roles, List<String> permissions, Integer userType) {
         long now = System.currentTimeMillis();
         HashMap<String, Object> claims = new HashMap<>();
         claims.put("tenantId", tenantId);
         claims.put("username", username);
         claims.put("roles", roles);
+        claims.put("permissions", permissions != null ? permissions : List.of());
         claims.put("userType", userType);
         return Jwts.builder()
                 .subject(String.valueOf(userId))

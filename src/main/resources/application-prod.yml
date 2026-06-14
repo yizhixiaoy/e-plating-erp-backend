@@ -66,6 +66,10 @@ app:
     cache-seconds: ${AUTHZ_CACHE_SECONDS:120}
   message:
     publish-check-ms: ${MESSAGE_PUBLISH_CHECK_MS:60000}
+  # AI助理配置（生产环境必须通过环境变量配置）
+  ai:
+    service-url: ${AI_SERVICE_URL}  # 必须配置，如 http://ai-python:8000
+    internal-api-key: ${AI_INTERNAL_API_KEY}  # 必须配置，与Python端JAVA_API_KEY一致
   mail:
     enabled: ${MAIL_ENABLED:true}  # 生产环境默认启用
     from: ${MAIL_FROM}  # 必须配置,如 noreply@zhiduyun.com

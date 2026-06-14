@@ -398,7 +398,10 @@ public class AuthServiceImpl implements AuthService {
         // 6. 生成令牌
         Long tenantId = user.getTenantId();
         List<String> roles = resolveUserRoles(user.getId(), tenantId, user.getUserType());
-        String accessToken = jwtTokenService.createToken(user.getId(), tenantId, user.getUsername(), roles, user.getUserType());
+        // 查询用户权限标识列表
+        List<String> permissions = permissionMapper.selectPerms(user.getId(), tenantId);
+        String accessToken = jwtTokenService.createToken(user.getId(), tenantId, user.getUsername(),
+                roles, permissions, user.getUserType());
         String refreshToken = refreshTokenService.create(user.getId(), tenantId);
         
         // 7. 确定 entryType
@@ -647,7 +650,9 @@ public class AuthServiceImpl implements AuthService {
 
         // 生成新的AccessToken
         List<String> roles = resolveUserRoles(user.getId(), tenantId, user.getUserType());
-        String newAccessToken = jwtTokenService.createToken(user.getId(), tenantId, user.getUsername(), roles, user.getUserType());
+        List<String> permissions = permissionMapper.selectPerms(user.getId(), tenantId);
+        String newAccessToken = jwtTokenService.createToken(user.getId(), tenantId,
+                user.getUsername(), roles, permissions, user.getUserType());
 
         // 同步刷新 sessionKey 的过期时间，避免 sessionKey 过期后解密失败
         sessionKeyService.touch(user.getId(), tenantId);

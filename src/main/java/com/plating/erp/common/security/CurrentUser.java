@@ -9,7 +9,8 @@ import java.util.List;
  * - userType = 0：平台用户（系统管理员），关联平台租户(tenantId=1)，可访问所有租户数据
  * - userType = 1：租户用户（租户管理员、普通员工），关联具体租户，只能访问本租户数据
  */
-public record CurrentUser(Long userId, Long tenantId, String username, List<String> roles, Integer userType) {
+public record CurrentUser(Long userId, Long tenantId, String username, List<String> roles,
+                          Integer userType) {
     
     /**
      * 判断是否为平台用户（系统管理员）

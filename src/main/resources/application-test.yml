@@ -66,6 +66,10 @@ app:
     cache-seconds: ${AUTHZ_CACHE_SECONDS:120}
   message:
     publish-check-ms: ${MESSAGE_PUBLISH_CHECK_MS:30000}
+  # AI助理配置（测试环境）
+  ai:
+    service-url: ${AI_SERVICE_URL:http://ai-python:8000}
+    internal-api-key: ${AI_INTERNAL_API_KEY:807a4f25de31d333437d71f771bc2b30}
   mail:
     enabled: ${MAIL_ENABLED:false}  # 测试环境默认禁用
     from: ${MAIL_FROM:noreply@zhiduyun.com}

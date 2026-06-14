@@ -20,39 +20,43 @@ public interface MenuMapper extends BaseMapper<MenuEntity> {
      * 关联 sys_user_role -> sys_role_menu -> sys_menu
      * 
      * @param userId 用户ID
+     * @param tenantId 租户ID
      * @return 用户有权访问的菜单列表
      */
     @Select("""
         SELECT DISTINCT m.*
-        FROM sys_menu m
-        INNER JOIN sys_role_menu rm ON m.id = rm.menu_id
-        INNER JOIN sys_user_role ur ON rm.role_id = ur.role_id
+        FROM sys_user_role ur
+        INNER JOIN sys_role_menu rm ON ur.role_id = rm.role_id AND ur.tenant_id = rm.tenant_id
+        INNER JOIN sys_menu m ON rm.menu_id = m.id AND (m.tenant_id = #{tenantId} OR m.tenant_id = 0)
         WHERE ur.user_id = #{userId}
+          AND ur.tenant_id = #{tenantId}
           AND m.status = 0
           AND m.deleted = 0
         ORDER BY m.sort_no ASC
     """)
-    List<MenuEntity> selectMenuTreeByUserId(@Param("userId") Long userId);
+    List<MenuEntity> selectMenuTreeByUserId(@Param("userId") Long userId, @Param("tenantId") Long tenantId);
 
     /**
      * 根据用户ID查询权限标识列表
      * 
      * @param userId 用户ID
+     * @param tenantId 租户ID
      * @return 权限标识列表，如: ["tenant:view", "user:add"]
      */
     @Select("""
         SELECT DISTINCT m.perms
-        FROM sys_menu m
-        INNER JOIN sys_role_menu rm ON m.id = rm.menu_id
-        INNER JOIN sys_user_role ur ON rm.role_id = ur.role_id
+        FROM sys_user_role ur
+        INNER JOIN sys_role_menu rm ON ur.role_id = rm.role_id AND ur.tenant_id = rm.tenant_id
+        INNER JOIN sys_menu m ON rm.menu_id = m.id AND (m.tenant_id = #{tenantId} OR m.tenant_id = 0)
         WHERE ur.user_id = #{userId}
+          AND ur.tenant_id = #{tenantId}
           AND m.menu_type = 'F'
           AND m.perms IS NOT NULL
           AND m.perms != ''
           AND m.status = 0
           AND m.deleted = 0
     """)
-    List<String> selectPermsByUserId(@Param("userId") Long userId);
+    List<String> selectPermsByUserId(@Param("userId") Long userId, @Param("tenantId") Long tenantId);
 
     /**
      * 查询平台级菜单(tenant_id=0)

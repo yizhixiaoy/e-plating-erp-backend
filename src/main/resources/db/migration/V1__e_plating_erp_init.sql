@@ -1,17 +1,17 @@
 /*
- Navicat Premium Data Transfer
+ Navicat Premium Dump SQL
 
  Source Server         : db1
  Source Server Type    : MySQL
- Source Server Version : 80030
+ Source Server Version : 80030 (8.0.30)
  Source Host           : localhost:3306
  Source Schema         : e_plating_erp
 
  Target Server Type    : MySQL
- Target Server Version : 80030
+ Target Server Version : 80030 (8.0.30)
  File Encoding         : 65001
 
- Date: 27/05/2026 22:36:34
+ Date: 15/06/2026 00:36:18
 */
 
 SET NAMES utf8mb4;
@@ -32,9 +32,9 @@ CREATE TABLE `auth_scan_session`  (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `confirmed_at` datetime NULL DEFAULT NULL COMMENT '确认时间',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_qr_token`(`qr_token`) USING BTREE,
-  INDEX `idx_tenant_status`(`tenant_id`, `session_status`) USING BTREE,
-  INDEX `idx_expire_at`(`expire_at`) USING BTREE
+  UNIQUE INDEX `uk_qr_token`(`qr_token` ASC) USING BTREE,
+  INDEX `idx_tenant_status`(`tenant_id` ASC, `session_status` ASC) USING BTREE,
+  INDEX `idx_expire_at`(`expire_at` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '扫码登录会话表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -58,8 +58,8 @@ CREATE TABLE `auth_verify_code`  (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `used_at` datetime NULL DEFAULT NULL COMMENT '使用时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_tenant_receiver`(`tenant_id`, `receiver`) USING BTREE,
-  INDEX `idx_expire_at`(`expire_at`) USING BTREE
+  INDEX `idx_tenant_receiver`(`tenant_id` ASC, `receiver` ASC) USING BTREE,
+  INDEX `idx_expire_at`(`expire_at` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '登录验证码记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -84,8 +84,8 @@ CREATE TABLE `base_dict_item`  (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted` tinyint NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_type_value`(`tenant_id`, `dict_type`, `dict_value`) USING BTREE,
-  INDEX `idx_tenant_type`(`tenant_id`, `dict_type`) USING BTREE
+  UNIQUE INDEX `uk_tenant_type_value`(`tenant_id` ASC, `dict_type` ASC, `dict_value` ASC) USING BTREE,
+  INDEX `idx_tenant_type`(`tenant_id` ASC, `dict_type` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '数据字典项表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -163,6 +163,9 @@ INSERT INTO `base_dict_item` VALUES (357, 0, 'sys_tenant_status', '冻结', '1',
 INSERT INTO `base_dict_item` VALUES (358, 0, 'sys_show_hide', '隐藏', '0', 1, 0, NULL, '2026-05-25 20:48:25', NULL, '2026-05-25 20:48:25', 0);
 INSERT INTO `base_dict_item` VALUES (359, 0, 'sys_show_hide', '显示', '1', 2, 0, NULL, '2026-05-25 20:48:25', NULL, '2026-05-25 20:48:25', 0);
 INSERT INTO `base_dict_item` VALUES (360, 0, 'todo_status', '已撤回', '4', 5, 0, NULL, '2026-05-25 23:47:21', NULL, '2026-05-25 23:47:21', 0);
+INSERT INTO `base_dict_item` VALUES (361, 0, 'email_template', '重置密码邮件主题', '密码重置通知 - {tenantName}', 7, 0, NULL, '2026-05-27 00:00:00', NULL, '2026-05-27 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (362, 0, 'email_template', '重置密码邮件内容', '尊敬的{realName}:\n\n您的账号密码已被管理员重置。\n\n账号信息如下:\n用户名: {username}\n新密码: {password}\n登录地址: {loginUrl}\n\n请使用新密码登录后，尽快修改为您的个人密码。', 8, 0, NULL, '2026-05-27 00:00:00', NULL, '2026-05-27 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (363, 0, 'email_push_config', '重置密码邮件通知', 'reset_password', 4, 0, NULL, '2026-05-27 00:00:00', NULL, '2026-05-27 00:00:00', 0);
 INSERT INTO `base_dict_item` VALUES (1001, 0, 'emoji', '😀', 'face:1', 1, 0, NULL, '2026-05-24 13:58:41', NULL, '2026-05-24 13:58:41', 0);
 INSERT INTO `base_dict_item` VALUES (1002, 0, 'emoji', '😃', 'face:2', 2, 0, NULL, '2026-05-24 13:58:41', NULL, '2026-05-24 13:58:41', 0);
 INSERT INTO `base_dict_item` VALUES (1003, 0, 'emoji', '😄', 'face:3', 3, 0, NULL, '2026-05-24 13:58:41', NULL, '2026-05-24 13:58:41', 0);
@@ -814,6 +817,139 @@ INSERT INTO `base_dict_item` VALUES (2047, 0, 'emoji', '⚪', 'symbols:47', 1147
 INSERT INTO `base_dict_item` VALUES (2048, 0, 'emoji', '🔷', 'symbols:48', 1148, 0, NULL, '2026-05-24 13:58:42', NULL, '2026-05-24 13:58:42', 0);
 INSERT INTO `base_dict_item` VALUES (2049, 0, 'emoji', '🔶', 'symbols:49', 1149, 0, NULL, '2026-05-24 13:58:42', NULL, '2026-05-24 13:58:42', 0);
 INSERT INTO `base_dict_item` VALUES (2050, 0, 'emoji', '⬛', 'symbols:50', 1150, 0, NULL, '2026-05-24 13:58:42', NULL, '2026-05-24 13:58:42', 0);
+INSERT INTO `base_dict_item` VALUES (3001, 0, 'ai_table_whitelist', '用户表', 'sys_user', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3002, 0, 'ai_table_whitelist', '角色表', 'sys_role', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3003, 0, 'ai_table_whitelist', '部门表', 'sys_dept', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3004, 0, 'ai_table_whitelist', '岗位表', 'sys_position', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3005, 0, 'ai_table_whitelist', '租户表', 'sys_tenant', 5, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3006, 0, 'ai_table_whitelist', '业务变更日志', 'sys_biz_log', 6, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3007, 0, 'ai_table_whitelist', '操作日志', 'sys_oper_log', 7, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3008, 0, 'ai_table_whitelist', '字典类型', 'base_dict_type', 8, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3009, 0, 'ai_table_whitelist', '字典项', 'base_dict_item', 9, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3010, 0, 'ai_table_whitelist', '聊天会话', 'chat_conversation', 10, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3011, 0, 'ai_table_whitelist', '聊天消息', 'chat_message', 11, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3012, 0, 'ai_table_whitelist', '站内消息', 'msg_notice', 12, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3013, 0, 'ai_table_whitelist', '待办事项', 'biz_todo', 13, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3014, 0, 'ai_table_whitelist', '待办处理日志', 'biz_todo_handle_log', 14, 0, NULL, '2026-06-14 17:31:46', NULL, '2026-06-14 17:31:46', 0);
+INSERT INTO `base_dict_item` VALUES (3015, 0, 'ai_table_whitelist', '聊天成员', 'chat_conversation_member', 15, 0, NULL, '2026-06-14 17:31:47', NULL, '2026-06-14 17:31:47', 0);
+INSERT INTO `base_dict_item` VALUES (3016, 0, 'ai_table_whitelist', '消息用户关联', 'msg_notice_user', 16, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3017, 0, 'ai_table_whitelist', '登录历史', 'sys_login_history', 17, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3018, 0, 'ai_table_whitelist', '菜单表', 'sys_menu', 18, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3019, 0, 'ai_table_whitelist', '用户角色关联', 'sys_user_role', 19, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3101, 0, 'ai_field_whitelist', '主键', 'sys_user.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3102, 0, 'ai_field_whitelist', '姓名', 'sys_user.real_name', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3103, 0, 'ai_field_whitelist', '部门ID', 'sys_user.dept_id', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3104, 0, 'ai_field_whitelist', '岗位', 'sys_user.position', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3105, 0, 'ai_field_whitelist', '员工状态', 'sys_user.employee_status', 5, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3106, 0, 'ai_field_whitelist', '状态', 'sys_user.status', 6, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3107, 0, 'ai_field_whitelist', '入职日期', 'sys_user.join_date', 7, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3108, 0, 'ai_field_whitelist', '创建时间', 'sys_user.created_at', 8, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3110, 0, 'ai_field_whitelist', '主键', 'sys_role.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3111, 0, 'ai_field_whitelist', '角色名', 'sys_role.role_name', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3112, 0, 'ai_field_whitelist', '角色标识', 'sys_role.role_key', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3113, 0, 'ai_field_whitelist', '数据范围', 'sys_role.data_scope', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3114, 0, 'ai_field_whitelist', '状态', 'sys_role.status', 5, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3120, 0, 'ai_field_whitelist', '主键', 'sys_dept.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3121, 0, 'ai_field_whitelist', '部门名称', 'sys_dept.dept_name', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3122, 0, 'ai_field_whitelist', '父部门ID', 'sys_dept.parent_id', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3123, 0, 'ai_field_whitelist', '状态', 'sys_dept.status', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3130, 0, 'ai_field_whitelist', '主键', 'sys_position.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3131, 0, 'ai_field_whitelist', '部门ID', 'sys_position.dept_id', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3132, 0, 'ai_field_whitelist', '岗位名称', 'sys_position.position_name', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3133, 0, 'ai_field_whitelist', '状态', 'sys_position.status', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3140, 0, 'ai_field_whitelist', '主键', 'sys_tenant.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3141, 0, 'ai_field_whitelist', '租户名称', 'sys_tenant.tenant_name', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3142, 0, 'ai_field_whitelist', '租户简称', 'sys_tenant.short_code', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3143, 0, 'ai_field_whitelist', '联系人', 'sys_tenant.contact_name', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3144, 0, 'ai_field_whitelist', '到期时间', 'sys_tenant.expire_time', 5, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3145, 0, 'ai_field_whitelist', '状态', 'sys_tenant.status', 6, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3146, 0, 'ai_field_whitelist', '创建时间', 'sys_tenant.created_at', 7, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3150, 0, 'ai_field_whitelist', '主键', 'sys_biz_log.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3151, 0, 'ai_field_whitelist', '业务模块', 'sys_biz_log.biz_module', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3152, 0, 'ai_field_whitelist', '业务ID', 'sys_biz_log.biz_id', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3153, 0, 'ai_field_whitelist', '字段名', 'sys_biz_log.field_name', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3154, 0, 'ai_field_whitelist', '操作人ID', 'sys_biz_log.user_id', 5, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3155, 0, 'ai_field_whitelist', '操作人', 'sys_biz_log.user_name', 6, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3156, 0, 'ai_field_whitelist', '创建时间', 'sys_biz_log.created_at', 7, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3160, 0, 'ai_field_whitelist', '主键', 'sys_oper_log.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3161, 0, 'ai_field_whitelist', '模块标题', 'sys_oper_log.module_title', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3162, 0, 'ai_field_whitelist', '操作类型', 'sys_oper_log.operate_type', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3163, 0, 'ai_field_whitelist', '操作人ID', 'sys_oper_log.user_id', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3164, 0, 'ai_field_whitelist', '操作人', 'sys_oper_log.user_name', 5, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3165, 0, 'ai_field_whitelist', '状态', 'sys_oper_log.status', 6, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3166, 0, 'ai_field_whitelist', '执行时长', 'sys_oper_log.execute_time', 7, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3167, 0, 'ai_field_whitelist', '创建时间', 'sys_oper_log.created_at', 8, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3170, 0, 'ai_field_whitelist', '主键', 'base_dict_type.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3171, 0, 'ai_field_whitelist', '字典类型', 'base_dict_type.dict_type', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3172, 0, 'ai_field_whitelist', '字典名称', 'base_dict_type.dict_name', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3173, 0, 'ai_field_whitelist', '状态', 'base_dict_type.status', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3180, 0, 'ai_field_whitelist', '主键', 'base_dict_item.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3181, 0, 'ai_field_whitelist', '字典类型', 'base_dict_item.dict_type', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3182, 0, 'ai_field_whitelist', '标签', 'base_dict_item.dict_label', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3183, 0, 'ai_field_whitelist', '键值', 'base_dict_item.dict_value', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3184, 0, 'ai_field_whitelist', '排序', 'base_dict_item.sort_no', 5, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3185, 0, 'ai_field_whitelist', '状态', 'base_dict_item.status', 6, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3190, 0, 'ai_field_whitelist', '主键', 'chat_conversation.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3191, 0, 'ai_field_whitelist', '会话类型', 'chat_conversation.conv_type', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3192, 0, 'ai_field_whitelist', '会话名称', 'chat_conversation.name', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3193, 0, 'ai_field_whitelist', '成员数量', 'chat_conversation.member_count', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3194, 0, 'ai_field_whitelist', '最后消息时间', 'chat_conversation.last_message_at', 5, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3195, 0, 'ai_field_whitelist', '创建时间', 'chat_conversation.created_at', 6, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3200, 0, 'ai_field_whitelist', '主键', 'chat_message.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3201, 0, 'ai_field_whitelist', '会话ID', 'chat_message.conversation_id', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3202, 0, 'ai_field_whitelist', '发送者ID', 'chat_message.sender_id', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3203, 0, 'ai_field_whitelist', '消息类型', 'chat_message.msg_type', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3204, 0, 'ai_field_whitelist', '创建时间', 'chat_message.created_at', 5, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3210, 0, 'ai_field_whitelist', '主键', 'msg_notice.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3211, 0, 'ai_field_whitelist', '标题', 'msg_notice.title', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3212, 0, 'ai_field_whitelist', '消息类型', 'msg_notice.notice_type', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3213, 0, 'ai_field_whitelist', '状态', 'msg_notice.status', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3214, 0, 'ai_field_whitelist', '发布时间', 'msg_notice.publish_time', 5, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3215, 0, 'ai_field_whitelist', '创建时间', 'msg_notice.created_at', 6, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3220, 0, 'ai_field_whitelist', '主键', 'biz_todo.id', 1, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3221, 0, 'ai_field_whitelist', '标题', 'biz_todo.title', 2, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3222, 0, 'ai_field_whitelist', '待办类型', 'biz_todo.todo_type', 3, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3223, 0, 'ai_field_whitelist', '状态', 'biz_todo.status', 4, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3224, 0, 'ai_field_whitelist', '处理人ID', 'biz_todo.assignee_id', 5, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3225, 0, 'ai_field_whitelist', '创建时间', 'biz_todo.created_at', 6, 0, NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_item` VALUES (3230, 0, 'ai_field_whitelist', '账号', 'sys_user.username', 9, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3231, 0, 'ai_field_whitelist', '手机号', 'sys_user.phone', 10, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3232, 0, 'ai_field_whitelist', '邮箱', 'sys_user.email', 11, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3240, 0, 'ai_field_whitelist', '主键', 'biz_todo_handle_log.id', 1, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3241, 0, 'ai_field_whitelist', '待办ID', 'biz_todo_handle_log.todo_id', 2, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3242, 0, 'ai_field_whitelist', '操作人ID', 'biz_todo_handle_log.operator_id', 3, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3243, 0, 'ai_field_whitelist', '操作动作', 'biz_todo_handle_log.action', 4, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3244, 0, 'ai_field_whitelist', '操作备注', 'biz_todo_handle_log.remark', 5, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3245, 0, 'ai_field_whitelist', '转交目标用户', 'biz_todo_handle_log.target_user', 6, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3246, 0, 'ai_field_whitelist', '创建时间', 'biz_todo_handle_log.created_at', 7, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3250, 0, 'ai_field_whitelist', '主键', 'chat_conversation_member.id', 1, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3251, 0, 'ai_field_whitelist', '会话ID', 'chat_conversation_member.conversation_id', 2, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3252, 0, 'ai_field_whitelist', '用户ID', 'chat_conversation_member.user_id', 3, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3253, 0, 'ai_field_whitelist', '加入时间', 'chat_conversation_member.joined_at', 4, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3260, 0, 'ai_field_whitelist', '主键', 'msg_notice_user.id', 1, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3261, 0, 'ai_field_whitelist', '消息ID', 'msg_notice_user.notice_id', 2, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3262, 0, 'ai_field_whitelist', '用户ID', 'msg_notice_user.user_id', 3, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3263, 0, 'ai_field_whitelist', '已读状态', 'msg_notice_user.read_status', 4, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3264, 0, 'ai_field_whitelist', '已读时间', 'msg_notice_user.read_time', 5, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3270, 0, 'ai_field_whitelist', '主键', 'sys_login_history.id', 1, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3271, 0, 'ai_field_whitelist', '用户ID', 'sys_login_history.user_id', 2, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3272, 0, 'ai_field_whitelist', '登录方式', 'sys_login_history.login_type', 3, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3273, 0, 'ai_field_whitelist', '登录时间', 'sys_login_history.login_time', 4, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3274, 0, 'ai_field_whitelist', '登录IP', 'sys_login_history.login_ip', 5, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3275, 0, 'ai_field_whitelist', '登录状态', 'sys_login_history.login_status', 6, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3276, 0, 'ai_field_whitelist', '失败原因', 'sys_login_history.fail_reason', 7, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3277, 0, 'ai_field_whitelist', '创建时间', 'sys_login_history.created_at', 8, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3280, 0, 'ai_field_whitelist', '主键', 'sys_menu.id', 1, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3281, 0, 'ai_field_whitelist', '父级ID', 'sys_menu.parent_id', 2, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3282, 0, 'ai_field_whitelist', '菜单名称', 'sys_menu.menu_name', 3, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3283, 0, 'ai_field_whitelist', '菜单类型', 'sys_menu.menu_type', 4, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3284, 0, 'ai_field_whitelist', '权限标识', 'sys_menu.perms', 5, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3285, 0, 'ai_field_whitelist', '状态', 'sys_menu.status', 6, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3286, 0, 'ai_field_whitelist', '是否可见', 'sys_menu.visible', 7, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3287, 0, 'ai_field_whitelist', '排序', 'sys_menu.sort_no', 8, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3290, 0, 'ai_field_whitelist', '主键', 'sys_user_role.id', 1, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3291, 0, 'ai_field_whitelist', '用户ID', 'sys_user_role.user_id', 2, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
+INSERT INTO `base_dict_item` VALUES (3292, 0, 'ai_field_whitelist', '角色ID', 'sys_user_role.role_id', 3, 0, NULL, '2026-06-14 17:31:48', NULL, '2026-06-14 17:31:48', 0);
 
 -- ----------------------------
 -- Table structure for base_dict_type
@@ -833,8 +969,8 @@ CREATE TABLE `base_dict_type`  (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted` tinyint NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_dict_type`(`tenant_id`, `dict_type`) USING BTREE,
-  INDEX `idx_tenant_status`(`tenant_id`, `status`) USING BTREE
+  UNIQUE INDEX `uk_tenant_dict_type`(`tenant_id` ASC, `dict_type` ASC) USING BTREE,
+  INDEX `idx_tenant_status`(`tenant_id` ASC, `status` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '数据字典类型表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -859,6 +995,8 @@ INSERT INTO `base_dict_type` VALUES (210, 0, 'email_push_config', '邮件推送�
 INSERT INTO `base_dict_type` VALUES (211, 0, 'email_template', '邮件模板', 0, 0, '系统邮件模板配置', NULL, '2026-05-25 01:00:47', NULL, '2026-05-25 01:00:47', 0);
 INSERT INTO `base_dict_type` VALUES (212, 0, 'sys_tenant_status', '租户状态', 0, 0, '0=正常 1=冻结', NULL, '2026-05-25 20:48:25', NULL, '2026-05-25 20:48:25', 0);
 INSERT INTO `base_dict_type` VALUES (213, 0, 'sys_show_hide', '显示隐藏', 0, 0, '0=隐藏 1=显示', NULL, '2026-05-25 20:48:25', NULL, '2026-05-25 20:48:25', 0);
+INSERT INTO `base_dict_type` VALUES (300, 0, 'ai_table_whitelist', 'AI查询表白名单', 0, 0, 'AI助理可查询的业务表名列表', NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
+INSERT INTO `base_dict_type` VALUES (301, 0, 'ai_field_whitelist', 'AI查询字段白名单', 0, 0, 'AI助理可查询的字段列表，dict_value格式为 表名.字段名', NULL, '2026-05-31 00:00:00', NULL, '2026-05-31 00:00:00', 0);
 
 -- ----------------------------
 -- Table structure for biz_todo
@@ -888,10 +1026,10 @@ CREATE TABLE `biz_todo`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0正常 1删除',
   `push_email` tinyint NOT NULL DEFAULT 0 COMMENT '是否邮件推送:0否 1是',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_tenant_assignee`(`tenant_id`, `assignee_id`, `status`) USING BTREE,
-  INDEX `idx_tenant_creator`(`tenant_id`, `creator_id`) USING BTREE,
-  INDEX `idx_tenant_type_status`(`tenant_id`, `todo_type`, `status`) USING BTREE,
-  INDEX `idx_deadline`(`deadline`) USING BTREE
+  INDEX `idx_tenant_assignee`(`tenant_id` ASC, `assignee_id` ASC, `status` ASC) USING BTREE,
+  INDEX `idx_tenant_creator`(`tenant_id` ASC, `creator_id` ASC) USING BTREE,
+  INDEX `idx_tenant_type_status`(`tenant_id` ASC, `todo_type` ASC, `status` ASC) USING BTREE,
+  INDEX `idx_deadline`(`deadline` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '待办事项表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -914,8 +1052,8 @@ CREATE TABLE `biz_todo_handle_log`  (
   `target_user` bigint NULL DEFAULT NULL COMMENT '转交目标用户ID',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_todo_id`(`todo_id`) USING BTREE,
-  INDEX `idx_tenant_operator`(`tenant_id`, `operator_id`) USING BTREE
+  INDEX `idx_todo_id`(`todo_id` ASC) USING BTREE,
+  INDEX `idx_tenant_operator`(`tenant_id` ASC, `operator_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '待办处理日志表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -941,8 +1079,8 @@ CREATE TABLE `chat_conversation`  (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_tenant_type`(`tenant_id`, `conv_type`) USING BTREE,
-  INDEX `idx_tenant_updated`(`tenant_id`, `updated_at`) USING BTREE
+  INDEX `idx_tenant_type`(`tenant_id` ASC, `conv_type` ASC) USING BTREE,
+  INDEX `idx_tenant_updated`(`tenant_id` ASC, `updated_at` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '聊天会话表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -971,8 +1109,8 @@ CREATE TABLE `chat_conversation_member`  (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_conv_user`(`tenant_id`, `conversation_id`, `user_id`) USING BTREE,
-  INDEX `idx_user_id`(`user_id`) USING BTREE
+  UNIQUE INDEX `uk_tenant_conv_user`(`tenant_id` ASC, `conversation_id` ASC, `user_id` ASC) USING BTREE,
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '聊天会话成员表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1003,8 +1141,8 @@ CREATE TABLE `chat_message`  (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_conv_id_time`(`conversation_id`, `created_at`) USING BTREE,
-  INDEX `idx_tenant_sender`(`tenant_id`, `sender_id`) USING BTREE
+  INDEX `idx_conv_id_time`(`conversation_id` ASC, `created_at` ASC) USING BTREE,
+  INDEX `idx_tenant_sender`(`tenant_id` ASC, `sender_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '聊天消息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1051,19 +1189,22 @@ CREATE TABLE `msg_email_record`  (
   `sent_time` datetime NULL DEFAULT NULL COMMENT '发送时间',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `operator_id` bigint NULL DEFAULT NULL COMMENT '操作人用户ID',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '邮件发送记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of msg_email_record
 -- ----------------------------
-INSERT INTO `msg_email_record` VALUES (2058928335501762562, 1, NULL, NULL, NULL, '3226235131@qq.com', '测试', '测试', 1, NULL, 0, '2026-05-25 23:09:03', '2026-05-25 23:09:02', '2026-05-25 23:09:03');
-INSERT INTO `msg_email_record` VALUES (2058929937902051330, 0, NULL, NULL, NULL, '3226235131@qq.com', '', '', 0, NULL, 0, NULL, '2026-05-25 23:15:25', '2026-05-25 23:15:25');
-INSERT INTO `msg_email_record` VALUES (2058930334758707201, 0, NULL, NULL, NULL, '3226235131@qq.com', '', '', 0, NULL, 0, NULL, '2026-05-25 23:17:00', '2026-05-25 23:17:00');
-INSERT INTO `msg_email_record` VALUES (2058940486094241794, 0, NULL, NULL, NULL, '3226235131@qq.com', '新消息通知: 测试5', '尊敬的张坤2:\n\n您收到一条新的消息通知:\n\n标题: 测试5\n类型: system\n测试5\n\n请登录系统查看详情。', 0, NULL, 0, NULL, '2026-05-25 23:57:20', '2026-05-25 23:57:20');
-INSERT INTO `msg_email_record` VALUES (2058951316533796866, 1, 2052406056122933250, 2058951315191619585, '张坤', '3226235131@qq.com', '新消息通知: 测试7', '尊敬的张坤2:\n\n您收到一条新的消息通知:\n\n标题: 测试7\n类型: 审批通知\n测试7\n\n请登录系统查看详情。', 2, 'MailSendException: Mail server connection failed. Failed messages: org.eclipse.angus.mail.util.MailConnectException: Couldn\'t connect to host, port: smtp.example.com, 465; timeout -1;\n  nested exception is:\n	java.net.UnknownHostException: smtp.example.com', 0, NULL, '2026-05-26 00:40:22', '2026-05-26 00:40:22');
-INSERT INTO `msg_email_record` VALUES (2059271214036242433, 1, 10002, 2058908627947859969, NULL, 'zhangsan@demo.com', '', '', 2, 'MailSendException: Mail server connection failed. Failed messages: org.eclipse.angus.mail.util.MailConnectException: Couldn\'t connect to host, port: smtp.example.com, 465; timeout -1;\n  nested exception is:\n	java.net.UnknownHostException: smtp.example.com', 0, NULL, '2026-05-26 21:51:31', '2026-05-26 21:51:32');
-INSERT INTO `msg_email_record` VALUES (2059271214258540545, 1, 2052406056122933250, 2058908627947859969, NULL, '3226235131@qq.com', '', '', 2, 'MailSendException: Mail server connection failed. Failed messages: org.eclipse.angus.mail.util.MailConnectException: Couldn\'t connect to host, port: smtp.example.com, 465; timeout -1;\n  nested exception is:\n	java.net.UnknownHostException: smtp.example.com', 0, NULL, '2026-05-26 21:51:32', '2026-05-26 21:51:32');
+INSERT INTO `msg_email_record` VALUES (2058928335501762562, 1, NULL, NULL, NULL, '3226235131@qq.com', '测试', '测试', 1, NULL, 0, '2026-05-25 23:09:03', '2026-05-25 23:09:02', '2026-05-25 23:09:03', NULL);
+INSERT INTO `msg_email_record` VALUES (2058929937902051330, 0, NULL, NULL, NULL, '3226235131@qq.com', '', '', 0, NULL, 0, NULL, '2026-05-25 23:15:25', '2026-05-25 23:15:25', NULL);
+INSERT INTO `msg_email_record` VALUES (2058930334758707201, 0, NULL, NULL, NULL, '3226235131@qq.com', '', '', 0, NULL, 0, NULL, '2026-05-25 23:17:00', '2026-05-25 23:17:00', NULL);
+INSERT INTO `msg_email_record` VALUES (2058940486094241794, 0, NULL, NULL, NULL, '3226235131@qq.com', '新消息通知: 测试5', '尊敬的张坤2:\n\n您收到一条新的消息通知:\n\n标题: 测试5\n类型: system\n测试5\n\n请登录系统查看详情。', 0, NULL, 0, NULL, '2026-05-25 23:57:20', '2026-05-25 23:57:20', NULL);
+INSERT INTO `msg_email_record` VALUES (2058951316533796866, 1, 2052406056122933250, 2058951315191619585, '张坤', '3226235131@qq.com', '新消息通知: 测试7', '尊敬的张坤2:\n\n您收到一条新的消息通知:\n\n标题: 测试7\n类型: 审批通知\n测试7\n\n请登录系统查看详情。', 2, 'MailSendException: Mail server connection failed. Failed messages: org.eclipse.angus.mail.util.MailConnectException: Couldn\'t connect to host, port: smtp.example.com, 465; timeout -1;\n  nested exception is:\n	java.net.UnknownHostException: smtp.example.com', 0, NULL, '2026-05-26 00:40:22', '2026-05-26 00:40:22', NULL);
+INSERT INTO `msg_email_record` VALUES (2059271214036242433, 1, 10002, 2058908627947859969, NULL, 'zhangsan@demo.com', '', '', 2, 'MailSendException: Mail server connection failed. Failed messages: org.eclipse.angus.mail.util.MailConnectException: Couldn\'t connect to host, port: smtp.example.com, 465; timeout -1;\n  nested exception is:\n	java.net.UnknownHostException: smtp.example.com', 0, NULL, '2026-05-26 21:51:31', '2026-05-26 21:51:32', NULL);
+INSERT INTO `msg_email_record` VALUES (2059271214258540545, 1, 2052406056122933250, 2058908627947859969, NULL, '3226235131@qq.com', '', '', 2, 'MailSendException: Mail server connection failed. Failed messages: org.eclipse.angus.mail.util.MailConnectException: Couldn\'t connect to host, port: smtp.example.com, 465; timeout -1;\n  nested exception is:\n	java.net.UnknownHostException: smtp.example.com', 0, NULL, '2026-05-26 21:51:32', '2026-05-26 21:51:32', NULL);
+INSERT INTO `msg_email_record` VALUES (2059654554505535490, 1, 2052406056122933250, NULL, '张坤', '3226235131@qq.com', '欢迎加入电镀ERP系统 - 您的账号已创建', '尊敬的张坤2:\n\n欢迎加入电镀ERP系统!\n\n您的账号信息如下:\n用户名: ZC-0001\n初始密码: Init@ZK518\n登录地址: http://localhost:5173/login\n\n为了账号安全,请及时修改密码。', 2, 'MailSendException: Mail server connection failed. Failed messages: org.eclipse.angus.mail.util.MailConnectException: Couldn\'t connect to host, port: smtp.example.com, 465; timeout -1;\n  nested exception is:\n	java.net.UnknownHostException: smtp.example.com', 0, NULL, '2026-05-27 23:14:47', '2026-05-27 23:14:47', NULL);
+INSERT INTO `msg_email_record` VALUES (2059658265260834818, 1, 2052406056122933250, NULL, '张坤', '3226235131@qq.com', '密码重置通知 - 电镀ERP系统', '尊敬的张坤2:\n\n您的账号密码已被管理员重置。\n\n账号信息如下:\n用户名: ZC-0001\n新密码: Init@ZK879\n登录地址: http://localhost:5173/login\n\n请使用新密码登录后，尽快修改为您的个人密码。', 2, 'MailSendException: Mail server connection failed. Failed messages: org.eclipse.angus.mail.util.MailConnectException: Couldn\'t connect to host, port: smtp.example.com, 465; timeout -1;\n  nested exception is:\n	java.net.UnknownHostException: smtp.example.com', 0, NULL, '2026-05-27 23:29:32', '2026-05-27 23:29:32', NULL);
 
 -- ----------------------------
 -- Table structure for msg_notice
@@ -1090,7 +1231,7 @@ CREATE TABLE `msg_notice`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否 1是',
   `push_email` tinyint NOT NULL DEFAULT 0 COMMENT '是否邮件推送:0否 1是',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_tenant_status_schedule`(`tenant_id`, `status`, `scheduled_publish_at`) USING BTREE
+  INDEX `idx_tenant_status_schedule`(`tenant_id` ASC, `status` ASC, `scheduled_publish_at` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '站内消息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1121,9 +1262,9 @@ CREATE TABLE `msg_notice_user`  (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '行更新时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否 1是',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_notice_user`(`tenant_id`, `notice_id`, `user_id`) USING BTREE,
-  INDEX `idx_tenant_user_status`(`tenant_id`, `user_id`, `read_status`) USING BTREE,
-  INDEX `idx_deleted`(`deleted`) USING BTREE
+  UNIQUE INDEX `uk_tenant_notice_user`(`tenant_id` ASC, `notice_id` ASC, `user_id` ASC) USING BTREE,
+  INDEX `idx_tenant_user_status`(`tenant_id` ASC, `user_id` ASC, `read_status` ASC) USING BTREE,
+  INDEX `idx_deleted`(`deleted` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息接收状态表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1142,7 +1283,7 @@ INSERT INTO `msg_notice_user` VALUES (1779727132329, 1, 2058950938345988098, 1, 
 INSERT INTO `msg_notice_user` VALUES (1779727142333, 20001, 2058950938345988098, 10001, 0, NULL, '2026-05-26 00:38:52', '2026-05-26 00:38:52', 0);
 INSERT INTO `msg_notice_user` VALUES (1779727142338, 20001, 2058950938345988098, 10002, 0, NULL, '2026-05-26 00:38:52', '2026-05-26 00:38:52', 0);
 INSERT INTO `msg_notice_user` VALUES (1779727221914, 1, 2058951315191619585, 1, 1, '2026-05-26 00:57:41', '2026-05-26 00:40:22', '2026-05-26 00:40:22', 0);
-INSERT INTO `msg_notice_user` VALUES (1779803491452, 1, 2058908627947859969, 1, 0, NULL, '2026-05-26 21:51:31', '2026-05-26 21:51:31', 0);
+INSERT INTO `msg_notice_user` VALUES (1779803491452, 1, 2058908627947859969, 1, 1, '2026-06-09 22:35:25', '2026-05-26 21:51:31', '2026-05-26 21:51:31', 0);
 INSERT INTO `msg_notice_user` VALUES (1779803501455, 20001, 2058908627947859969, 10001, 0, NULL, '2026-05-26 21:51:31', '2026-05-26 21:51:31', 0);
 INSERT INTO `msg_notice_user` VALUES (1779803501459, 20001, 2058908627947859969, 10002, 0, NULL, '2026-05-26 21:51:31', '2026-05-26 21:51:31', 0);
 INSERT INTO `msg_notice_user` VALUES (2052407835842872055, 1, 2058894067027259394, 2052406056122933250, 0, NULL, '2026-05-25 22:38:59', '2026-05-25 22:38:59', 0);
@@ -1177,10 +1318,10 @@ CREATE TABLE `msg_sms_record`  (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_receiver_phone`(`receiver_phone`) USING BTREE,
-  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
-  INDEX `idx_send_status`(`send_status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '短信发送记录表' ROW_FORMAT = Dynamic;
+  INDEX `idx_receiver_phone`(`receiver_phone` ASC) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id` ASC) USING BTREE,
+  INDEX `idx_send_status`(`send_status` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '短信发送记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of msg_sms_record
@@ -1202,8 +1343,8 @@ CREATE TABLE `sys_biz_log`  (
   `user_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '操作人',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_tenant_biz`(`tenant_id`, `biz_module`, `biz_id`) USING BTREE,
-  INDEX `idx_tenant_time`(`tenant_id`, `created_at`) USING BTREE
+  INDEX `idx_tenant_biz`(`tenant_id` ASC, `biz_module` ASC, `biz_id` ASC) USING BTREE,
+  INDEX `idx_tenant_time`(`tenant_id` ASC, `created_at` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '业务变更日志表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1376,6 +1517,12 @@ INSERT INTO `sys_biz_log` VALUES (2059423325281697794, 1, 'user', 0, 'passwordHa
 INSERT INTO `sys_biz_log` VALUES (2059423593868148738, 1, 'user', 10002, 'username', '\"10002\"', '\"a-user\"', 1, 'system', '2026-05-27 07:57:01');
 INSERT INTO `sys_biz_log` VALUES (2059426765655359490, 1, 'user', 0, 'phone', NULL, NULL, 1, 'system', '2026-05-27 08:09:37');
 INSERT INTO `sys_biz_log` VALUES (2059427838860324866, 1, 'user', 0, 'phone', '\"18375219477\"', NULL, 1, 'system', '2026-05-27 08:13:53');
+INSERT INTO `sys_biz_log` VALUES (2059645648593035266, 1, 'user', 0, 'phone', '\"18375219477\"', NULL, 1, 'system', '2026-05-27 22:39:23');
+INSERT INTO `sys_biz_log` VALUES (2059649311780708353, 1, 'user', 0, 'phone', '\"18375219477\"', NULL, 1, 'system', '2026-05-27 22:53:57');
+INSERT INTO `sys_biz_log` VALUES (2059654556099371010, 1, 'user', 0, 'newPassword', '\"2052406056122933250\"', '\"Init@ZK518\"', 1, 'system', '2026-05-27 23:14:47');
+INSERT INTO `sys_biz_log` VALUES (2059658267035025409, 1, 'user', 0, 'newPassword', '\"2052406056122933250\"', '\"Init@ZK879\"', 1, 'system', '2026-05-27 23:29:32');
+INSERT INTO `sys_biz_log` VALUES (2059658398715199490, 1, 'user', 0, 'newPassword', '\"10001\"', '\"Init@ZHGLY933\"', 1, 'system', '2026-05-27 23:30:03');
+INSERT INTO `sys_biz_log` VALUES (2064355692232404994, 1, 'notice', 0, 'readStatus', '\"2058908627947859969\"', '1', 1, 'system', '2026-06-09 22:35:25');
 
 -- ----------------------------
 -- Table structure for sys_dept
@@ -1395,8 +1542,8 @@ CREATE TABLE `sys_dept`  (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted` tinyint NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_parent_name`(`tenant_id`, `parent_id`, `dept_name`) USING BTREE,
-  INDEX `idx_tenant_parent`(`tenant_id`, `parent_id`) USING BTREE
+  UNIQUE INDEX `uk_tenant_parent_name`(`tenant_id` ASC, `parent_id` ASC, `dept_name` ASC) USING BTREE,
+  INDEX `idx_tenant_parent`(`tenant_id` ASC, `parent_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1425,9 +1572,9 @@ CREATE TABLE `sys_login_history`  (
   `fail_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '失败原因',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_tenant_user`(`tenant_id`, `user_id`) USING BTREE,
-  INDEX `idx_user_time`(`user_id`, `login_time`) USING BTREE,
-  INDEX `idx_login_time`(`login_time`) USING BTREE
+  INDEX `idx_tenant_user`(`tenant_id` ASC, `user_id` ASC) USING BTREE,
+  INDEX `idx_user_time`(`user_id` ASC, `login_time` ASC) USING BTREE,
+  INDEX `idx_login_time`(`login_time` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户登录历史表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1495,6 +1642,19 @@ INSERT INTO `sys_login_history` VALUES (2058459640799260674, 1, 1, 'PASSWORD', '
 INSERT INTO `sys_login_history` VALUES (2058459936397029377, 1, 1, 'PASSWORD', '2026-05-24 16:07:48', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-24 16:07:48');
 INSERT INTO `sys_login_history` VALUES (2058465789342760961, 1, 1, 'PASSWORD', '2026-05-24 16:31:03', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-24 16:31:03');
 INSERT INTO `sys_login_history` VALUES (2059423136303136769, 1, 1, 'PASSWORD', '2026-05-27 07:55:13', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-27 07:55:13');
+INSERT INTO `sys_login_history` VALUES (2059645575960272897, 1, 1, 'PASSWORD', '2026-05-27 22:39:06', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-27 22:39:06');
+INSERT INTO `sys_login_history` VALUES (2059662443358023682, 1, 1, 'PASSWORD', '2026-05-27 23:46:08', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-27 23:46:08');
+INSERT INTO `sys_login_history` VALUES (2059678611502350337, 1, 1, 'PASSWORD', '2026-05-28 00:50:23', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-05-28 00:50:23');
+INSERT INTO `sys_login_history` VALUES (2064354932211937281, 1, 1, 'PASSWORD', '2026-06-09 22:32:24', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-06-09 22:32:24');
+INSERT INTO `sys_login_history` VALUES (2064358710122213377, 1, 1, 'PASSWORD', '2026-06-09 22:47:25', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-06-09 22:47:25');
+INSERT INTO `sys_login_history` VALUES (2064372998257893378, 1, 1, 'PASSWORD', '2026-06-09 23:44:12', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-06-09 23:44:12');
+INSERT INTO `sys_login_history` VALUES (2064725784447164417, 1, 1, 'PASSWORD', '2026-06-10 23:06:02', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-06-10 23:06:02');
+INSERT INTO `sys_login_history` VALUES (2066120244678733826, 1, 1, 'PASSWORD', '2026-06-14 19:27:08', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-06-14 19:27:08');
+INSERT INTO `sys_login_history` VALUES (2066123492827443201, 1, 1, 'PASSWORD', '2026-06-14 19:40:02', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-06-14 19:40:02');
+INSERT INTO `sys_login_history` VALUES (2066154421788704770, 1, 1, 'PASSWORD', '2026-06-14 21:42:56', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-06-14 21:42:56');
+INSERT INTO `sys_login_history` VALUES (2066169176389591042, 1, 1, 'PASSWORD', '2026-06-14 22:41:34', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-06-14 22:41:34');
+INSERT INTO `sys_login_history` VALUES (2066173830926180353, 1, 1, 'PASSWORD', '2026-06-14 23:00:04', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-06-14 23:00:04');
+INSERT INTO `sys_login_history` VALUES (2066173951172681729, 1, 1, 'PASSWORD', '2026-06-14 23:00:32', '127.0.0.1', 'Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', 1, NULL, '2026-06-14 23:00:32');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -1519,8 +1679,8 @@ CREATE TABLE `sys_menu`  (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志:0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_tenant_parent`(`tenant_id`, `parent_id`) USING BTREE,
-  INDEX `idx_tenant_status`(`tenant_id`, `status`) USING BTREE
+  INDEX `idx_tenant_parent`(`tenant_id` ASC, `parent_id` ASC) USING BTREE,
+  INDEX `idx_tenant_status`(`tenant_id` ASC, `status` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '平台菜单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1540,7 +1700,12 @@ INSERT INTO `sys_menu` VALUES (21, 20, 0, '日志中心', 'C', 'logs', 'Document
 INSERT INTO `sys_menu` VALUES (22, 20, 0, '消息管理', 'C', 'messages', 'Bell', NULL, 0, 1, 1, 'MessageView', NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (23, 20, 0, '聊天', 'C', 'chat', 'ChatRound', NULL, 0, 2, 1, 'ChatView', NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 22:21:15', 0);
 INSERT INTO `sys_menu` VALUES (24, 0, 0, '邮件', 'C', 'email', 'Message', 'message:email:view', 0, 50, 1, 'EmailView', NULL, '2026-05-18 22:21:15', NULL, '2026-05-18 23:56:13', 0);
+INSERT INTO `sys_menu` VALUES (25, 0, 0, '短信记录', 'C', 'sms', 'Cellphone', 'message:email:view', 0, 51, 1, 'SmsView', NULL, '2026-05-27 00:00:00', NULL, '2026-05-27 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (30, 0, 0, '个人中心', 'C', 'profile', 'Avatar', NULL, 0, 99, 1, 'ProfileView', NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
+INSERT INTO `sys_menu` VALUES (40, 0, 0, 'AI智能助手', 'M', 'ai', 'Cpu', NULL, 0, 3, 1, NULL, 1, '2026-06-09 23:27:40', NULL, '2026-06-09 23:27:40', 0);
+INSERT INTO `sys_menu` VALUES (41, 40, 0, 'AI对话', 'C', 'ai-chat', 'ChatLineRound', NULL, 0, 0, 1, 'AiChatView', 1, '2026-06-09 23:27:40', NULL, '2026-06-09 23:27:40', 0);
+INSERT INTO `sys_menu` VALUES (42, 40, 0, 'AI写作', 'C', 'ai-writer', 'EditPen', NULL, 0, 1, 1, 'AiWriterView', 1, '2026-06-09 23:27:40', NULL, '2026-06-09 23:27:40', 0);
+INSERT INTO `sys_menu` VALUES (43, 40, 0, 'AI知识库', 'C', 'ai-knowledge', 'Collection', NULL, 0, 2, 1, 'AiKnowledgeView', 1, '2026-06-09 23:27:40', NULL, '2026-06-09 23:27:40', 0);
 INSERT INTO `sys_menu` VALUES (100, 1, 0, '查看工作台', 'F', '', '', 'workbench:view', 0, 0, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (110, 11, 0, '租户查看', 'F', '', '', 'tenant:view', 0, 0, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (111, 11, 0, '租户新增', 'F', '', '', 'tenant:add', 0, 1, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
@@ -1594,6 +1759,12 @@ INSERT INTO `sys_menu` VALUES (300, 30, 0, '查看个人信息', 'F', '', '', 'p
 INSERT INTO `sys_menu` VALUES (301, 30, 0, '编辑个人信息', 'F', '', '', 'profile:edit', 0, 1, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (302, 30, 0, '修改密码', 'F', '', '', 'profile:password', 0, 2, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
 INSERT INTO `sys_menu` VALUES (303, 30, 0, '编辑公司信息', 'F', '', '', 'company:edit', 0, 3, 1, NULL, NULL, '2026-04-19 00:00:00', NULL, '2026-04-19 00:00:00', 0);
+INSERT INTO `sys_menu` VALUES (410, 41, 0, 'AI对话使用', 'F', '', '', 'ai:chat:view', 0, 0, 1, NULL, 1, '2026-06-09 23:27:40', NULL, '2026-06-09 23:27:40', 0);
+INSERT INTO `sys_menu` VALUES (420, 42, 0, 'AI写作使用', 'F', '', '', 'ai:writer:view', 0, 0, 1, NULL, 1, '2026-06-09 23:27:40', NULL, '2026-06-09 23:27:40', 0);
+INSERT INTO `sys_menu` VALUES (430, 43, 0, 'AI知识库使用', 'F', '', '', 'ai:knowledge:view', 0, 0, 1, NULL, 1, '2026-06-09 23:27:40', NULL, '2026-06-09 23:27:40', 0);
+INSERT INTO `sys_menu` VALUES (431, 43, 0, '管理全租户知识库', 'F', '', '', 'ai:knowledge:manage_global', 0, 1, 1, NULL, 1, '2026-06-10 23:04:29', NULL, '2026-06-10 23:04:29', 0);
+INSERT INTO `sys_menu` VALUES (432, 43, 0, '管理公司知识库', 'F', '', '', 'ai:knowledge:manage_tenant', 0, 2, 1, NULL, 1, '2026-06-10 23:04:29', NULL, '2026-06-10 23:04:29', 0);
+INSERT INTO `sys_menu` VALUES (433, 43, 0, '管理个人知识库', 'F', '', '', 'ai:knowledge:manage_personal', 0, 3, 1, NULL, 1, '2026-06-10 23:04:30', NULL, '2026-06-10 23:04:30', 0);
 
 -- ----------------------------
 -- Table structure for sys_oper_log
@@ -1618,8 +1789,8 @@ CREATE TABLE `sys_oper_log`  (
   `user_agent` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'User-Agent',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_tenant_time`(`tenant_id`, `created_at`) USING BTREE,
-  INDEX `idx_tenant_user_time`(`tenant_id`, `user_id`, `created_at`) USING BTREE
+  INDEX `idx_tenant_time`(`tenant_id` ASC, `created_at` ASC) USING BTREE,
+  INDEX `idx_tenant_user_time`(`tenant_id` ASC, `user_id` ASC, `created_at` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1791,6 +1962,12 @@ INSERT INTO `sys_oper_log` VALUES (2059423324761604098, 1, '用户管理', 'RESE
 INSERT INTO `sys_oper_log` VALUES (2059423593633267713, 1, '用户管理', 'UPDATE', 1, 'system', '/api/v1/users/10002', 'PUT', 'UserController.update', '[\"10002\",{\"username\":\"a-user\",\"realName\":\"张三\",\"password\":\"***\",\"avatarUrl\":null,\"deptId\":null,\"position\":null,\"leaderUserId\":null,\"phone\":\"***\",\"email\":\"zhangsan@demo.com\",\"roleIds\":[\"3\"]}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"id\":\"10002\",\"tenantId\":\"20001\",\"username\":\"a-user\",\"passwordHash\":\"$2a$10$xgjVs901gByIhhhkB9Ni2.SnvFl9tIxBzkOTNKN6OhtJN.yq8lBKi\",\"realName\":\"张三\",\"avatarUrl\":null,\"deptId\":null,\"position\":null,\"leaderUserId\":null,\"phone\":\"13800000003\",\"officePhone\":null,\"email\":\"zhangsan@demo.com\",\"joinDate\":null,\"employeeStatus\":0,\"userType\":1,\"status\":0,\"lastLoginAt\":null,\"lastLoginIp\":null,\"loginCount\":0,\"wechatOpenid\":null,\"dingtalkUserid\":null,\"tenantName\":null,\"shortName\":null,\"createdBy\":null,\"createdAt\":\"2026-04-17T01:57:35\",\"updatedBy\":\"1\",\"updatedAt\":\"2026-04-17T01:57:35\",\"deleted\":0},\"traceId\":\"trace-1779839821615\",\"timestamp\":\"1779839821615\"}', 0, NULL, 1299, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-27 07:57:01');
 INSERT INTO `sys_oper_log` VALUES (2059426764027969537, 1, '个人信息', 'SEND_BIND_PHONE_CODE', 1, 'system', '/api/v1/auth/bind-phone/send-code', 'POST', 'AuthController.sendBindPhoneCode', '[{\"phone\":\"***\"}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"channel\":\"SMS\",\"receiver\":\"18375219477\",\"sent\":true},\"traceId\":\"trace-1779840577490\",\"timestamp\":\"1779840577490\"}', 0, NULL, 14, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-27 08:09:37');
 INSERT INTO `sys_oper_log` VALUES (2059427838206013441, 1, '个人信息', 'SEND_BIND_PHONE_CODE', 1, 'system', '/api/v1/auth/bind-phone/send-code', 'POST', 'AuthController.sendBindPhoneCode', '[{\"phone\":\"***\"}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"channel\":\"SMS\",\"receiver\":\"18375219477\",\"sent\":true},\"traceId\":\"trace-1779840833564\",\"timestamp\":\"1779840833564\"}', 0, NULL, 24, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-27 08:13:53');
+INSERT INTO `sys_oper_log` VALUES (2059645646588157954, 1, '个人信息', 'SEND_BIND_PHONE_CODE', 1, 'system', '/api/v1/auth/bind-phone/send-code', 'POST', 'AuthController.sendBindPhoneCode', '[{\"phone\":\"***\"}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"channel\":\"SMS\",\"receiver\":\"18375219477\",\"sent\":true},\"traceId\":\"trace-1779892763160\",\"timestamp\":\"1779892763160\"}', 0, NULL, 11, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-27 22:39:23');
+INSERT INTO `sys_oper_log` VALUES (2059649311570993154, 1, '个人信息', 'SEND_BIND_PHONE_CODE', 1, 'system', '/api/v1/auth/bind-phone/send-code', 'POST', 'AuthController.sendBindPhoneCode', '[{\"phone\":\"***\"}]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"channel\":\"SMS\",\"receiver\":\"18375219477\",\"sent\":true},\"traceId\":\"trace-1779893636966\",\"timestamp\":\"1779893636966\"}', 0, NULL, 7, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-27 22:53:56');
+INSERT INTO `sys_oper_log` VALUES (2059654555877072898, 1, '用户管理', 'RESET_PASSWORD', 1, 'system', '/api/v1/users/2052406056122933250/reset-password', 'PATCH', 'UserController.resetPassword', '[\"2052406056122933250\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"userId\":\"2052406056122933250\",\"newPassword\":\"Init@ZK518\",\"needChange\":true,\"sessionsInvalidated\":true},\"traceId\":\"trace-1779894887300\",\"timestamp\":\"1779894887300\"}', 0, NULL, 794, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-27 23:14:47');
+INSERT INTO `sys_oper_log` VALUES (2059658266850476033, 1, '用户管理', 'RESET_PASSWORD', 1, 'system', '/api/v1/users/2052406056122933250/reset-password', 'PATCH', 'UserController.resetPassword', '[\"2052406056122933250\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"userId\":\"2052406056122933250\",\"newPassword\":\"Init@ZK879\",\"needChange\":true,\"sessionsInvalidated\":true,\"emailSent\":true,\"smsSent\":true},\"traceId\":\"trace-1779895772064\",\"timestamp\":\"1779895772064\"}', 0, NULL, 733, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-27 23:29:32');
+INSERT INTO `sys_oper_log` VALUES (2059658398484512769, 1, '用户管理', 'RESET_PASSWORD', 1, 'system', '/api/v1/users/10001/reset-password', 'PATCH', 'UserController.resetPassword', '[\"10001\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"userId\":\"10001\",\"newPassword\":\"Init@ZHGLY933\",\"needChange\":true,\"sessionsInvalidated\":true,\"emailSent\":false,\"smsSent\":false},\"traceId\":\"trace-1779895803457\",\"timestamp\":\"1779895803457\"}', 0, NULL, 223, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-05-27 23:30:03');
+INSERT INTO `sys_oper_log` VALUES (2064355691867500545, 1, '消息中心', 'READ', 1, 'system', '/api/v1/messages/notices/2058908627947859969/read', 'PUT', 'MessageController.read', '[\"2058908627947859969\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"noticeId\":\"2058908627947859969\",\"readStatus\":1},\"traceId\":\"trace-1781015725463\",\"timestamp\":\"1781015725463\"}', 0, NULL, 109, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0', '2026-06-09 22:35:25');
 
 -- ----------------------------
 -- Table structure for sys_position
@@ -1809,9 +1986,9 @@ CREATE TABLE `sys_position`  (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted` tinyint NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_dept_position`(`tenant_id`, `dept_id`, `position_name`) USING BTREE,
-  INDEX `idx_tenant_status`(`tenant_id`, `status`) USING BTREE,
-  INDEX `idx_dept_id`(`dept_id`) USING BTREE
+  UNIQUE INDEX `uk_tenant_dept_position`(`tenant_id` ASC, `dept_id` ASC, `position_name` ASC) USING BTREE,
+  INDEX `idx_tenant_status`(`tenant_id` ASC, `status` ASC) USING BTREE,
+  INDEX `idx_dept_id`(`dept_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1840,8 +2017,8 @@ CREATE TABLE `sys_role`  (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted` tinyint NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_role_name`(`tenant_id`, `role_name`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_role_key`(`tenant_id`, `role_key`) USING BTREE
+  UNIQUE INDEX `uk_tenant_role_name`(`tenant_id` ASC, `role_name` ASC) USING BTREE,
+  UNIQUE INDEX `uk_tenant_role_key`(`tenant_id` ASC, `role_key` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1863,7 +2040,7 @@ CREATE TABLE `sys_role_menu`  (
   `created_by` bigint NULL DEFAULT NULL COMMENT '创建人',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_role_menu`(`tenant_id`, `role_id`, `menu_id`) USING BTREE
+  UNIQUE INDEX `uk_tenant_role_menu`(`tenant_id` ASC, `role_id` ASC, `menu_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色菜单关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1972,6 +2149,25 @@ INSERT INTO `sys_role_menu` VALUES (631, 0, 2, 170, NULL, '2026-04-28 00:57:52')
 INSERT INTO `sys_role_menu` VALUES (632, 0, 2, 171, NULL, '2026-04-28 00:57:52');
 INSERT INTO `sys_role_menu` VALUES (633, 0, 2, 172, NULL, '2026-04-28 00:57:52');
 INSERT INTO `sys_role_menu` VALUES (634, 0, 2, 173, NULL, '2026-04-28 00:57:52');
+INSERT INTO `sys_role_menu` VALUES (700, 0, 1, 40, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (701, 0, 1, 41, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (702, 0, 1, 42, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (703, 0, 1, 43, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (704, 0, 1, 410, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (705, 0, 1, 420, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (706, 0, 1, 430, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (710, 0, 2, 40, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (711, 0, 2, 41, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (712, 0, 2, 42, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (713, 0, 2, 43, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (714, 0, 2, 410, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (715, 0, 2, 420, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (716, 0, 2, 430, NULL, '2026-06-09 23:27:40');
+INSERT INTO `sys_role_menu` VALUES (720, 0, 1, 431, NULL, '2026-06-10 23:04:30');
+INSERT INTO `sys_role_menu` VALUES (721, 0, 1, 432, NULL, '2026-06-10 23:04:30');
+INSERT INTO `sys_role_menu` VALUES (722, 0, 1, 433, NULL, '2026-06-10 23:04:30');
+INSERT INTO `sys_role_menu` VALUES (723, 0, 2, 432, NULL, '2026-06-10 23:04:30');
+INSERT INTO `sys_role_menu` VALUES (724, 0, 2, 433, NULL, '2026-06-10 23:04:30');
 INSERT INTO `sys_role_menu` VALUES (2055298461729886210, 2047713939437985793, 3, 1, 1, '2026-05-15 22:45:14');
 INSERT INTO `sys_role_menu` VALUES (2055298461738274818, 2047713939437985793, 3, 100, 1, '2026-05-15 22:45:14');
 INSERT INTO `sys_role_menu` VALUES (2055298461742469122, 2047713939437985793, 3, 22, 1, '2026-05-15 22:45:14');
@@ -2007,11 +2203,11 @@ CREATE TABLE `sys_tenant`  (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted` tinyint NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_short_code`(`short_code`) USING BTREE,
-  UNIQUE INDEX `uk_phone`(`phone`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_name`(`tenant_name`) USING BTREE,
-  INDEX `idx_expire_time`(`expire_time`) USING BTREE,
-  INDEX `idx_status`(`status`) USING BTREE
+  UNIQUE INDEX `uk_short_code`(`short_code` ASC) USING BTREE,
+  UNIQUE INDEX `uk_phone`(`phone` ASC) USING BTREE,
+  UNIQUE INDEX `uk_tenant_name`(`tenant_name` ASC) USING BTREE,
+  INDEX `idx_expire_time`(`expire_time` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '租户信息表（SaaS多租户）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -2054,22 +2250,22 @@ CREATE TABLE `sys_user`  (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted` tinyint NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_username`(`tenant_id`, `username`) USING BTREE,
-  UNIQUE INDEX `uk_wechat_openid`(`wechat_openid`) USING BTREE,
-  UNIQUE INDEX `uk_dingtalk_userid`(`dingtalk_userid`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_realname_phone`(`tenant_id`, `real_name`, `phone`) USING BTREE,
-  INDEX `idx_tenant_status`(`tenant_id`, `status`) USING BTREE,
-  INDEX `idx_tenant_dept`(`tenant_id`, `dept_id`) USING BTREE,
-  INDEX `idx_leader_user`(`leader_user_id`) USING BTREE
+  UNIQUE INDEX `uk_tenant_username`(`tenant_id` ASC, `username` ASC) USING BTREE,
+  UNIQUE INDEX `uk_wechat_openid`(`wechat_openid` ASC) USING BTREE,
+  UNIQUE INDEX `uk_dingtalk_userid`(`dingtalk_userid` ASC) USING BTREE,
+  UNIQUE INDEX `uk_tenant_realname_phone`(`tenant_id` ASC, `real_name` ASC, `phone` ASC) USING BTREE,
+  INDEX `idx_tenant_status`(`tenant_id` ASC, `status` ASC) USING BTREE,
+  INDEX `idx_tenant_dept`(`tenant_id` ASC, `dept_id` ASC) USING BTREE,
+  INDEX `idx_leader_user`(`leader_user_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户表（包含员工信息）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 1, 'system', '$2a$10$7cR05yaoxCH8PeyGGEA/C.UTyfsSzsa7Fuy9jdbbVZ/MgVyoOqwq2', '张坤', 'iam%2Favatar%2F2026_04_24%2Fa45221b5e95b449596cc3f0def0eb55e.jpg', NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '2026-05-27 07:55:12', '127.0.0.1', 59, NULL, NULL, NULL, '2026-04-17 01:57:30', NULL, '2026-05-27 07:55:12', 0);
-INSERT INTO `sys_user` VALUES (10001, 20001, 'a-admin', '$2a$10$vh7HJgPPXtOy5P54CWzcy.dxK.xx/KeH4qosHhumu5bzge2/dmH9i', '租户管理员', NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 1, 0, '2026-04-20 23:56:36', '127.0.0.1', 3, NULL, NULL, NULL, '2026-04-17 01:57:30', 1, '2026-04-20 23:56:35', 0);
+INSERT INTO `sys_user` VALUES (1, 1, 'system', '$2a$10$7cR05yaoxCH8PeyGGEA/C.UTyfsSzsa7Fuy9jdbbVZ/MgVyoOqwq2', '张坤', 'iam%2Favatar%2F2026_04_24%2Fa45221b5e95b449596cc3f0def0eb55e.jpg', NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '2026-06-14 23:00:32', '127.0.0.1', 72, NULL, NULL, NULL, '2026-04-17 01:57:30', NULL, '2026-06-14 23:00:31', 0);
+INSERT INTO `sys_user` VALUES (10001, 20001, 'a-admin', '$2a$10$8Q94mC5XM5M5Cld.02dlEeHwIRyRsMstB/FPV.DruOwADUoEOHvzS', '租户管理员', NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 1, 0, '2026-04-20 23:56:36', '127.0.0.1', 3, NULL, NULL, NULL, '2026-04-17 01:57:30', 1, '2026-04-20 23:56:35', 0);
 INSERT INTO `sys_user` VALUES (10002, 20001, 'a-user', '$2a$10$xgjVs901gByIhhhkB9Ni2.SnvFl9tIxBzkOTNKN6OhtJN.yq8lBKi', '张三', NULL, NULL, NULL, NULL, NULL, NULL, 0, '13800000003', 'zhangsan@demo.com', 1, 0, NULL, NULL, 0, NULL, NULL, NULL, '2026-04-17 01:57:35', 1, '2026-04-17 01:57:35', 0);
-INSERT INTO `sys_user` VALUES (2052406056122933250, 1, 'ZC-0001', '$2a$10$6QNqcwgmJD/2K1cFEY7TDeVbsdxApA0K4GQma6ucMsxxDSGybg7Ua', '张坤2', '', 2049159839674892289, 'CEO', 1, NULL, NULL, 0, '18315789639', '3226235131@qq.com', 1, 0, NULL, NULL, 0, NULL, NULL, 1, '2026-05-07 23:11:50', 1, '2026-05-07 23:11:50', 0);
+INSERT INTO `sys_user` VALUES (2052406056122933250, 1, 'ZC-0001', '$2a$10$04b/QRoakW.6R1Y1cI0JAuvJIBvm5UXDS8.JDn4crGm4nydvUyCRC', '张坤2', '', 2049159839674892289, 'CEO', 1, NULL, NULL, 0, '18315789639', '3226235131@qq.com', 1, 0, NULL, NULL, 0, NULL, NULL, 1, '2026-05-07 23:11:50', 1, '2026-05-07 23:11:50', 0);
 INSERT INTO `sys_user` VALUES (2054932938223599618, 2047713939437985793, 'RKZQ-0001', '$2a$10$PED59huGBqgHdIVWiTt/ie98VQa1Y6z.1g/5QJ49nKBDxzBck8tq6', '小明', '', 2049506187976765442, 'HR', NULL, NULL, NULL, 0, '17789896563', '', 1, 0, NULL, NULL, 0, NULL, NULL, 1, '2026-05-14 22:32:45', 1, '2026-05-14 22:32:45', 0);
 
 -- ----------------------------
@@ -2085,8 +2281,8 @@ CREATE TABLE `sys_user_recent_tenant`  (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_user_tenant`(`user_id`, `tenant_id`) USING BTREE,
-  INDEX `idx_user_time`(`user_id`, `last_login_time`) USING BTREE
+  UNIQUE INDEX `uk_user_tenant`(`user_id` ASC, `tenant_id` ASC) USING BTREE,
+  INDEX `idx_user_time`(`user_id` ASC, `last_login_time` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户最近登录租户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -2105,7 +2301,7 @@ CREATE TABLE `sys_user_role`  (
   `role_id` bigint NOT NULL COMMENT '角色ID',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_user_role`(`tenant_id`, `user_id`, `role_id`) USING BTREE
+  UNIQUE INDEX `uk_tenant_user_role`(`tenant_id` ASC, `user_id` ASC, `role_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户角色关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
