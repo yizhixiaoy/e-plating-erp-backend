@@ -11,7 +11,7 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST}
-      port: ${REDIS_PORT:6379}
+      port: ${REDIS_PORT:12679}
   mail:
     host: ${MAIL_HOST}  # 必须配置SMTP服务器地址
     port: ${MAIL_PORT:465}  # SSL端口465或STARTTLS端口587

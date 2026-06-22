@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/e_plating_erp?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://3.tcp.cpolar.top:10746/e_plating_erp?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: root
     password: root
     druid:
@@ -17,8 +17,8 @@ spring:
         exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*,/actuator/*,/swagger-ui*,/v3/api-docs*"
   data:
     redis:
-      host: ${REDIS_HOST:127.0.0.1}
-      port: ${REDIS_PORT:6379}
+      host: ${REDIS_HOST:3.tcp.cpolar.top}
+      port: ${REDIS_PORT:12679}
   mail:
     host: ${MAIL_HOST:127.0.0.1}  # 本地SMTP服务器
     port: ${MAIL_PORT:25}  # 本地SMTP通常使用25端口
