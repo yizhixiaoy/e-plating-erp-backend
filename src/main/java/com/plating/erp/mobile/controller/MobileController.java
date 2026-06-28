@@ -1,16 +1,19 @@
 package com.plating.erp.mobile.controller;
 
 import com.plating.erp.auth.service.AuthService;
+import com.plating.erp.base.service.DictService;
+import com.plating.erp.base.vo.DictVo;
 import com.plating.erp.common.api.ApiResponse;
 import com.plating.erp.common.api.BizException;
 import com.plating.erp.common.api.ErrorCode;
 import com.plating.erp.common.api.response.CommonResponses;
 import com.plating.erp.common.api.response.PageResult;
-import com.plating.erp.common.security.CurrentUser;
+import com.plating.erp.common.security.SecurityUtils;
 import com.plating.erp.common.util.FileUploadUtils;
 import com.plating.erp.iam.entity.DeptEntity;
 import com.plating.erp.iam.entity.UserEntity;
 import com.plating.erp.iam.mapper.DeptMapper;
+import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.iam.service.DeptService;
 import com.plating.erp.iam.service.UserService;
 import com.plating.erp.message.entity.EmailRecordEntity;
@@ -20,7 +23,10 @@ import com.plating.erp.message.mapper.EmailRecordMapper;
 import com.plating.erp.message.mapper.NoticeUserMapper;
 import com.plating.erp.message.mapper.SmsRecordMapper;
 import com.plating.erp.message.service.MessageService;
+import com.plating.erp.message.vo.MessageVo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.plating.erp.platform.entity.TenantEntity;
 import com.plating.erp.platform.service.TenantService;
 import com.plating.erp.todo.entity.TodoEntity;
@@ -31,6 +37,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,10 +56,12 @@ public class MobileController {
     private final UserService userService;
     private final DeptService deptService;
     private final DeptMapper deptMapper;
+    private final UserMapper userMapper;
     private final TenantService tenantService;
     private final StringRedisTemplate redisTemplate;
     private final EmailRecordMapper emailRecordMapper;
     private final SmsRecordMapper smsRecordMapper;
+    private final DictService dictService;
 
     public MobileController(MessageService messageService,
                             AuthService authService,
@@ -61,10 +70,12 @@ public class MobileController {
                             UserService userService,
                             DeptService deptService,
                             DeptMapper deptMapper,
+                            UserMapper userMapper,
                             TenantService tenantService,
                             StringRedisTemplate redisTemplate,
                             EmailRecordMapper emailRecordMapper,
-                            SmsRecordMapper smsRecordMapper) {
+                            SmsRecordMapper smsRecordMapper,
+                            DictService dictService) {
         this.messageService = messageService;
         this.authService = authService;
         this.noticeUserMapper = noticeUserMapper;
@@ -72,25 +83,32 @@ public class MobileController {
         this.userService = userService;
         this.deptService = deptService;
         this.deptMapper = deptMapper;
+        this.userMapper = userMapper;
         this.tenantService = tenantService;
         this.redisTemplate = redisTemplate;
         this.emailRecordMapper = emailRecordMapper;
         this.smsRecordMapper = smsRecordMapper;
+        this.dictService = dictService;
     }
 
     // ==================== 消息 ====================
 
     @GetMapping("/messages")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<List<?>> getMessages(CurrentUser user) {
-        var result = messageService.myNotices(1, 100, user.userId(), null);
-        return ApiResponse.ok(result.records());
+    public ApiResponse<PageResult<MessageVo.MyNoticeView>> getMessages(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "50") Integer pageSize,
+            @RequestParam(required = false) String noticeType,
+            @RequestParam(required = false) Integer readStatus) {
+        var user = SecurityUtils.currentUser();
+        var result = messageService.myNoticesEnhanced(pageNum, pageSize, user.userId(), readStatus, noticeType, null, null, null);
+        return ApiResponse.ok(result);
     }
 
     @PutMapping("/messages/{noticeId}/read")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Void> markAsRead(@PathVariable Long noticeId, CurrentUser user) {
-        messageService.readNotice(noticeId, user.userId());
+    public ApiResponse<Void> markAsRead(@PathVariable Long noticeId) {
+        messageService.readNotice(noticeId, SecurityUtils.currentUser().userId());
         return ApiResponse.ok(null);
     }
 
@@ -99,11 +117,12 @@ public class MobileController {
      */
     @PostMapping("/messages/read-all")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Void> markAllRead(CurrentUser user) {
-        if (user == null || user.userId() == null) {
-            return ApiResponse.ok(null);
-        }
-        List<NoticeUserEntity> unread = noticeUserMapper.selectVisiblePage(user.userId(), 0, 0L, 1000);
+    public ApiResponse<Void> markAllRead() {
+        var user = SecurityUtils.currentUser();
+        Page<NoticeUserEntity> page = new Page<>(1, 1000);
+        page.setSearchCount(false);
+        IPage<NoticeUserEntity> result = noticeUserMapper.selectVisiblePage(page, user.userId(), 0);
+        List<NoticeUserEntity> unread = result.getRecords();
         if (unread != null) {
             for (NoticeUserEntity nu : unread) {
                 if (nu == null || nu.getNoticeId() == null) continue;
@@ -122,72 +141,72 @@ public class MobileController {
     public ApiResponse<PageResult<TodoEntity>> getTodos(@RequestParam(defaultValue = "1") Integer pageNum,
                                                         @RequestParam(defaultValue = "20") Integer pageSize,
                                                         @RequestParam(required = false) Integer status,
-                                                        @RequestParam(required = false) String todoType,
-                                                        CurrentUser user) {
-        if (user == null || user.userId() == null) {
-            return ApiResponse.ok(new PageResult<>(List.of(), 0L));
-        }
+                                                        @RequestParam(required = false) String todoType) {
+        var user = SecurityUtils.currentUser();
         TodoVo.QueryReq q = new TodoVo.QueryReq(todoType, status, null, null);
         return ApiResponse.ok(todoService.myList(pageNum, pageSize, user.userId(), q));
     }
 
     @GetMapping("/todos/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<TodoEntity> getTodoDetail(@PathVariable Long id, CurrentUser user) {
-        return ApiResponse.ok(todoService.getById(id, user.userId()));
+    public ApiResponse<TodoEntity> getTodoDetail(@PathVariable Long id) {
+        return ApiResponse.ok(todoService.getById(id, SecurityUtils.currentUser().userId()));
     }
 
     @PostMapping("/todos/{id}/handle")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<TodoEntity> handleTodo(@PathVariable Long id,
-                                              @RequestBody TodoVo.HandleReq body,
-                                              CurrentUser user) {
-        return ApiResponse.ok(todoService.handle(id, body, user.userId()));
+                                              @RequestBody TodoVo.HandleReq body) {
+        return ApiResponse.ok(todoService.handle(id, body, SecurityUtils.currentUser().userId()));
     }
 
     @PutMapping("/todos/{id}/read")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Void> markTodoRead(@PathVariable Long id, CurrentUser user) {
-        todoService.markRead(id, user.userId());
+    public ApiResponse<Void> markTodoRead(@PathVariable Long id) {
+        todoService.markRead(id, SecurityUtils.currentUser().userId());
         return ApiResponse.ok(null);
     }
 
     @GetMapping("/todos/stats")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<TodoVo.Stats> todoStats(CurrentUser user) {
-        return ApiResponse.ok(todoService.stats(user.userId()));
+    public ApiResponse<TodoVo.Stats> todoStats() {
+        return ApiResponse.ok(todoService.stats(SecurityUtils.currentUser().userId()));
     }
 
     // ==================== 工作台 ====================
 
     @GetMapping("/workbench/stats")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Map<String, Object>> workbenchStats(CurrentUser user) {
+    public ApiResponse<Map<String, Object>> workbenchStats() {
+        var user = SecurityUtils.currentUser();
         long unread = 0;
         long pendingTodos = 0;
-        if (user != null && user.userId() != null) {
-            Long c = noticeUserMapper.countVisibleForUser(user.userId(), 0);
-            unread = c == null ? 0 : c;
-            pendingTodos = todoService.countPending(user.userId());
-        }
+        Long c = noticeUserMapper.countVisibleForUser(user.userId(), 0);
+        unread = c == null ? 0 : c;
+        pendingTodos = todoService.countPending(user.userId());
+        // 统计今日活跃用户数（当日登录过的用户）
+        long todayLogins = userMapper.selectCount(
+                new LambdaQueryWrapper<UserEntity>()
+                        .ge(UserEntity::getLastLoginAt, LocalDate.now().atStartOfDay()));
         Map<String, Object> resp = new LinkedHashMap<>();
         resp.put("unreadMessages", unread);
         resp.put("pendingTodos", pendingTodos);
-        resp.put("todayLogs", 0);
-        resp.put("onlineUsers", 0);
+        resp.put("todayLogs", todayLogins);
+        resp.put("onlineUsers", todayLogins);
         return ApiResponse.ok(resp);
     }
 
     @GetMapping("/workbench/quick-access")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<List<Map<String, Object>>> quickAccess() {
-        List<Map<String, Object>> list = List.of(
-                Map.of("key", "scan", "label", "扫一扫"),
-                Map.of("key", "chat", "label", "聊天"),
-                Map.of("key", "contacts", "label", "通讯录"),
-                Map.of("key", "message", "label", "消息"),
-                Map.of("key", "todo", "label", "待办")
-        );
+        List<DictVo.DictDataVo> items = dictService.getDictData("mobile_quick_access");
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (DictVo.DictDataVo item : items) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("key", item.dictValue());
+            m.put("label", item.dictLabel());
+            list.add(m);
+        }
         return ApiResponse.ok(list);
     }
 
@@ -195,8 +214,18 @@ public class MobileController {
 
     @GetMapping("/contacts/depts")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<List<Map<String, Object>>> contactsDepts(CurrentUser user) {
-        List<DeptEntity> depts = deptService.listAll(user.tenantId());
+    public ApiResponse<List<Map<String, Object>>> contactsDepts() {
+        Long tenantId = SecurityUtils.currentUser().tenantId();
+        List<DeptEntity> depts = deptService.listAll(tenantId);
+
+        // 查询每个部门的直属在职用户数（单次 GROUP BY）
+        Map<Long, Long> deptUserCount = new HashMap<>();
+        for (Map<String, Object> row : userMapper.countByDept(tenantId)) {
+            Long deptId = row.get("deptId") != null ? ((Number) row.get("deptId")).longValue() : null;
+            Long cnt = row.get("cnt") != null ? ((Number) row.get("cnt")).longValue() : 0L;
+            if (deptId != null) deptUserCount.put(deptId, cnt);
+        }
+
         // 构建部门树（两层简化：parentId=0 为顶层）
         Map<Long, Map<String, Object>> nodeMap = new LinkedHashMap<>();
         List<Map<String, Object>> roots = new ArrayList<>();
@@ -205,6 +234,7 @@ public class MobileController {
             node.put("id", d.getId());
             node.put("deptName", d.getDeptName());
             node.put("parentId", d.getParentId());
+            node.put("userCount", deptUserCount.getOrDefault(d.getId(), 0L));
             node.put("children", new ArrayList<Map<String, Object>>());
             nodeMap.put(d.getId(), node);
         }
@@ -218,7 +248,26 @@ public class MobileController {
                 children.add(node);
             }
         }
+
+        // 递归累加子部门用户数到父部门
+        for (Map<String, Object> root : roots) {
+            accumulateUserCount(root);
+        }
+
         return ApiResponse.ok(roots);
+    }
+
+    /** 递归累加子部门用户数到父部门 */
+    @SuppressWarnings("unchecked")
+    private void accumulateUserCount(Map<String, Object> node) {
+        long ownCount = node.get("userCount") != null ? ((Number) node.get("userCount")).longValue() : 0L;
+        List<Map<String, Object>> children = (List<Map<String, Object>>) node.get("children");
+        long childTotal = 0L;
+        for (Map<String, Object> child : children) {
+            accumulateUserCount(child);
+            childTotal += child.get("userCount") != null ? ((Number) child.get("userCount")).longValue() : 0L;
+        }
+        node.put("userCount", ownCount + childTotal);
     }
 
     @GetMapping("/contacts/users")
@@ -226,8 +275,8 @@ public class MobileController {
     public ApiResponse<Map<String, Object>> contactsUsers(@RequestParam(defaultValue = "1") Integer pageNum,
                                                           @RequestParam(defaultValue = "20") Integer pageSize,
                                                           @RequestParam(required = false) String keyword,
-                                                          @RequestParam(required = false) String deptId,
-                                                          CurrentUser user) {
+                                                          @RequestParam(required = false) String deptId) {
+        var user = SecurityUtils.currentUser();
         Long filterDeptId = null;
         if (deptId != null && !deptId.isBlank()) {
             try { filterDeptId = Long.parseLong(deptId); } catch (NumberFormatException ignored) {}
@@ -267,7 +316,8 @@ public class MobileController {
 
     @GetMapping("/contacts/users/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Map<String, Object>> contactsUserDetail(@PathVariable Long id, CurrentUser user) {
+    public ApiResponse<Map<String, Object>> contactsUserDetail(@PathVariable Long id) {
+        var user = SecurityUtils.currentUser();
         UserEntity u = userService.getById(id);
         if (u == null || !u.getTenantId().equals(user.tenantId())) {
             throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
@@ -296,7 +346,8 @@ public class MobileController {
 
     @GetMapping("/me/profile")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Map<String, Object>> meProfile(CurrentUser user) {
+    public ApiResponse<Map<String, Object>> meProfile() {
+        var user = SecurityUtils.currentUser();
         UserEntity u = userService.getById(user.userId());
         if (u == null) {
             throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
@@ -328,8 +379,8 @@ public class MobileController {
 
     @PutMapping("/me/password")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<CommonResponses.SuccessResponse> mePassword(@RequestBody Map<String, String> body,
-                                                                   CurrentUser user) {
+    public ApiResponse<CommonResponses.SuccessResponse> mePassword(@RequestBody Map<String, String> body) {
+        var user = SecurityUtils.currentUser();
         String oldPwd = body == null ? null : body.get("oldPassword");
         String newPwd = body == null ? null : body.get("newPassword");
         if (oldPwd == null || oldPwd.isEmpty()) {
@@ -351,27 +402,26 @@ public class MobileController {
 
     @GetMapping("/me/settings")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Map<String, Object>> getSettings(CurrentUser user) {
+    public ApiResponse<Map<String, Object>> getSettings() {
+        var user = SecurityUtils.currentUser();
         Map<String, Object> defaults = defaultSettings();
-        if (user != null && user.userId() != null) {
-            String json = redisTemplate.opsForValue().get(SETTINGS_KEY_PREFIX + user.userId());
-            if (json != null && !json.isBlank()) {
-                try {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> stored = new com.fasterxml.jackson.databind.ObjectMapper()
-                            .readValue(json, Map.class);
-                    defaults.putAll(stored);
-                } catch (Exception ignored) {}
-            }
+        String json = redisTemplate.opsForValue().get(SETTINGS_KEY_PREFIX + user.userId());
+        if (json != null && !json.isBlank()) {
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> stored = new com.fasterxml.jackson.databind.ObjectMapper()
+                        .readValue(json, Map.class);
+                defaults.putAll(stored);
+            } catch (Exception ignored) {}
         }
         return ApiResponse.ok(defaults);
     }
 
     @PutMapping("/me/settings")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Map<String, Object>> putSettings(@RequestBody Map<String, Object> body,
-                                                        CurrentUser user) {
-        if (user != null && user.userId() != null && body != null) {
+    public ApiResponse<Map<String, Object>> putSettings(@RequestBody Map<String, Object> body) {
+        var user = SecurityUtils.currentUser();
+        if (body != null) {
             try {
                 String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(body);
                 redisTemplate.opsForValue().set(SETTINGS_KEY_PREFIX + user.userId(), json, Duration.ofDays(90));
@@ -394,8 +444,8 @@ public class MobileController {
 
     @GetMapping("/me/company")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Map<String, Object>> companyInfo(CurrentUser user) {
-        TenantEntity tenant = tenantService.getById(user.tenantId());
+    public ApiResponse<Map<String, Object>> companyInfo() {
+        TenantEntity tenant = tenantService.getById(SecurityUtils.currentUser().tenantId());
         if (tenant == null) {
             throw new BizException(ErrorCode.NOT_FOUND, "租户不存在");
         }
@@ -415,8 +465,8 @@ public class MobileController {
     public ApiResponse<Map<String, Object>> myEmailRecords(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "20") Integer pageSize,
-            @RequestParam(required = false) Integer sendStatus,
-            CurrentUser user) {
+            @RequestParam(required = false) Integer sendStatus) {
+        var user = SecurityUtils.currentUser();
         LambdaQueryWrapper<EmailRecordEntity> qw = new LambdaQueryWrapper<>();
         qw.eq(EmailRecordEntity::getOperatorId, user.userId());
         if (sendStatus != null) {
@@ -451,8 +501,8 @@ public class MobileController {
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "20") Integer pageSize,
             @RequestParam(required = false) Integer sendStatus,
-            @RequestParam(required = false) String smsType,
-            CurrentUser user) {
+            @RequestParam(required = false) String smsType) {
+        var user = SecurityUtils.currentUser();
         LambdaQueryWrapper<SmsRecordEntity> qw = new LambdaQueryWrapper<>();
         qw.eq(SmsRecordEntity::getOperatorId, user.userId());
         if (sendStatus != null) {

@@ -1,6 +1,7 @@
 package com.plating.erp.message.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,9 +55,9 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public PageResult<NoticeEntity> myNotices(int pageNum, int pageSize, Long userId, Integer readStatus) {
-        long offset = (pageNum - 1L) * pageSize;
-        List<NoticeUserEntity> noticeUsers = noticeUserMapper.selectVisiblePage(userId, readStatus, offset, pageSize);
-        Long total = noticeUserMapper.countVisibleForUser(userId, readStatus);
+        Page<NoticeUserEntity> page = new Page<>(pageNum, pageSize);
+        IPage<NoticeUserEntity> result = noticeUserMapper.selectVisiblePage(page, userId, readStatus);
+        List<NoticeUserEntity> noticeUsers = result.getRecords();
 
         List<Long> noticeIds = noticeUsers.stream()
                 .map(NoticeUserEntity::getNoticeId)
@@ -76,7 +77,7 @@ public class MessageServiceImpl implements MessageService {
             notices = ordered;
         }
 
-        return new PageResult<>(notices, total);
+        return new PageResult<>(notices, result.getTotal());
     }
 
     @Override
@@ -87,10 +88,10 @@ public class MessageServiceImpl implements MessageService {
                                                                 String keyword,
                                                                 LocalDateTime dateFrom,
                                                                 LocalDateTime dateTo) {
-        long offset = (pageNum - 1L) * pageSize;
-        List<Map<String, Object>> rows = noticeUserMapper.selectMyNoticesEnhanced(
-                userId, readStatus, noticeType, keyword, dateFrom, dateTo, offset, pageSize);
-        Long total = noticeUserMapper.countMyNoticesEnhanced(userId, readStatus, noticeType, keyword, dateFrom, dateTo);
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+        IPage<Map<String, Object>> result = noticeUserMapper.selectMyNoticesEnhanced(
+                page, userId, readStatus, noticeType, keyword, dateFrom, dateTo);
+        List<Map<String, Object>> rows = result.getRecords();
 
         List<MessageVo.MyNoticeView> list = new ArrayList<>();
         for (Map<String, Object> r : rows) {
@@ -109,7 +110,7 @@ public class MessageServiceImpl implements MessageService {
                     toLocalDateTime(r.get("readTime"))
             ));
         }
-        return new PageResult<>(list, total == null ? 0L : total);
+        return new PageResult<>(list, result.getTotal());
     }
 
     @Override

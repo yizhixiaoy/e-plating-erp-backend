@@ -6,9 +6,9 @@ spring:
     name: e-plating-erp-backend
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
-    url: ${DB_URL:jdbc:mysql://3.tcp.cpolar.top:10746/e_plating_erp?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    url: ${DB_URL:jdbc:mysql://154.8.225.234:3306/e_plating_erp?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:e-plating}
+    password: ${DB_PASSWORD:e-plating}
     driver-class-name: com.mysql.cj.jdbc.Driver
     druid:
       initial-size: 3
@@ -23,8 +23,9 @@ spring:
       test-on-return: false
   data:
     redis:
-      host: ${REDIS_HOST:3.tcp.cpolar.top}
-      port: ${REDIS_PORT:12679}
+      host: ${REDIS_HOST:154.8.225.234}
+      port: ${REDIS_PORT:6379}
+      password: redis2026
   # 邮件服务器配置(默认禁用,通过环境变量启用)
   mail:
     host: ${MAIL_HOST:smtp.example.com}

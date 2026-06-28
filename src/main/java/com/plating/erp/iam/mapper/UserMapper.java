@@ -11,6 +11,8 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 用户数据访问层
@@ -90,6 +92,15 @@ public interface UserMapper extends BaseMapper<UserEntity> {
                                                @Param("deptId") Long deptId,
                                                @Param("status") Integer status,
                                                @Param("keyword") String keyword);
+
+    /**
+     * 按部门统计在职用户数（单次 GROUP BY 查询，SQL 见 UserMapper.xml）
+     *
+     * @param tenantId 租户ID
+     * @return 每个元素包含 deptId 和 cnt
+     */
+    @InterceptorIgnore(tenantLine = "true")
+    List<Map<String, Object>> countByDept(@Param("tenantId") Long tenantId);
 
     /**
      * 检查邮箱是否已存在

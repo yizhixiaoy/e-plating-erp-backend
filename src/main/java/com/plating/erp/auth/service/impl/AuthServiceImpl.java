@@ -13,6 +13,7 @@ import com.plating.erp.auth.vo.AuthResponseVo;
 import com.plating.erp.auth.vo.AuthVo;
 import com.plating.erp.common.api.BizException;
 import com.plating.erp.common.api.ErrorCode;
+import com.plating.erp.common.security.CurrentUser;
 import com.plating.erp.common.security.JwtTokenService;
 import com.plating.erp.common.security.PermissionMapper;
 import com.plating.erp.common.security.RefreshTokenService;
@@ -26,6 +27,8 @@ import com.plating.erp.iam.mapper.UserMapper;
 import com.plating.erp.iam.service.UserService;
 import com.plating.erp.platform.entity.TenantEntity;
 import com.plating.erp.platform.mapper.TenantMapper;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -135,11 +138,11 @@ public class AuthServiceImpl implements AuthService {
         }
         
         // 平台用户（系统管理员）不需要返回租户信息
-        boolean isPlatformUser = user.getUserType() != null && user.getUserType() == 0;
+        /*boolean isPlatformUser = user.getUserType() != null && user.getUserType() == 0;
         if (isPlatformUser) {
             log.debug("平台用户，不返回租户信息, username={}, userType={}", username, user.getUserType());
             return new AuthResponseVo.TenantByUsernameResult(null, null, null, null, null, null, null, false);
-        }
+        }*/
         
         log.debug("找到用户, userId={}, tenantId={}", user.getId(), user.getTenantId());
         
@@ -601,9 +604,13 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void sendSmsCode(String phone, String tenantCode, String scene) {
         // 登录/忘记密码前发送验证码，此时无操作人上下文，传null
-        var me = SecurityUtils.currentUser();
-        Long operatorId = me != null ? me.userId() : null;
-        Long tenantId = me != null ? me.tenantId() : null;
+        Long operatorId = null;
+        Long tenantId = null;
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof CurrentUser user) {
+            operatorId = user.userId();
+            tenantId = user.tenantId();
+        }
         verificationCodeService.sendSmsCode(phone, scene, operatorId, tenantId);
     }
 

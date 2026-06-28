@@ -1,6 +1,7 @@
 package com.plating.erp.message.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.plating.erp.message.entity.NoticeUserEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -27,12 +28,11 @@ public interface NoticeUserMapper extends BaseMapper<NoticeUserEntity> {
             + "WHERE nu.user_id = #{userId} AND IFNULL(nu.deleted,0) = 0 "
             + "AND n.status = 2 AND IFNULL(n.deleted,0) = 0 "
             + "<if test='readStatus != null'> AND nu.read_status = #{readStatus} </if>"
-            + "ORDER BY nu.id DESC LIMIT #{limit} OFFSET #{offset}"
+            + "ORDER BY nu.id DESC"
             + "</script>")
-    List<NoticeUserEntity> selectVisiblePage(@Param("userId") Long userId,
-                                             @Param("readStatus") Integer readStatus,
-                                             @Param("offset") long offset,
-                                             @Param("limit") int limit);
+    IPage<NoticeUserEntity> selectVisiblePage(IPage<?> page,
+                                             @Param("userId") Long userId,
+                                             @Param("readStatus") Integer readStatus);
 
     /**
      * 增强分页：联表拼接 notice 字段返回扭平 Map（含 readStatus / title / noticeType ...）
@@ -50,16 +50,15 @@ public interface NoticeUserMapper extends BaseMapper<NoticeUserEntity> {
             + "<if test='keyword != null and keyword != \"\"'> AND (n.title LIKE CONCAT('%', #{keyword}, '%') OR n.content LIKE CONCAT('%', #{keyword}, '%')) </if>"
             + "<if test='dateFrom != null'> AND n.created_at &gt;= #{dateFrom} </if>"
             + "<if test='dateTo != null'> AND n.created_at &lt;= #{dateTo} </if>"
-            + "ORDER BY nu.read_status ASC, n.created_at DESC LIMIT #{limit} OFFSET #{offset}"
+            + "ORDER BY nu.read_status ASC, n.created_at DESC"
             + "</script>")
-    List<Map<String, Object>> selectMyNoticesEnhanced(@Param("userId") Long userId,
+    IPage<Map<String, Object>> selectMyNoticesEnhanced(IPage<?> page,
+                                                      @Param("userId") Long userId,
                                                       @Param("readStatus") Integer readStatus,
                                                       @Param("noticeType") String noticeType,
                                                       @Param("keyword") String keyword,
                                                       @Param("dateFrom") LocalDateTime dateFrom,
-                                                      @Param("dateTo") LocalDateTime dateTo,
-                                                      @Param("offset") long offset,
-                                                      @Param("limit") int limit);
+                                                      @Param("dateTo") LocalDateTime dateTo);
 
     @Select("<script>"
             + "SELECT COUNT(*) FROM msg_notice_user nu INNER JOIN msg_notice n ON n.id = nu.notice_id "

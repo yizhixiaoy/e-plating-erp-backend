@@ -1,12 +1,12 @@
 package com.plating.erp.chat.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.plating.erp.chat.entity.ConversationEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,12 +17,11 @@ import java.util.Map;
 public interface ConversationMapper extends BaseMapper<ConversationEntity> {
 
     /** 我的会话列表（按 last_message_at 降序，置顶优先） */
-    List<Map<String, Object>> selectMyConversations(@Param("userId") Long userId,
+    IPage<Map<String, Object>> selectMyConversations(IPage<?> page,
+                                                    @Param("userId") Long userId,
                                                     @Param("convType") String convType,
                                                     @Param("keyword") String keyword,
-                                                    @Param("unreadOnly") Boolean unreadOnly,
-                                                    @Param("offset") long offset,
-                                                    @Param("limit") int limit);
+                                                    @Param("unreadOnly") Boolean unreadOnly);
 
     /** 我的会话总数 */
     Long countMyConversations(@Param("userId") Long userId,

@@ -1,6 +1,8 @@
 package com.plating.erp.chat.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.plating.erp.base.service.DictService;
 import com.plating.erp.base.vo.DictVo;
 import com.plating.erp.chat.entity.ChatMessageEntity;
@@ -77,15 +79,17 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public PageResult<ChatVo.ConversationView> myConversations(int pageNum, int pageSize, Long userId, ChatVo.ConvQuery query) {
-        long offset = (pageNum - 1L) * pageSize;
         String convType = query == null ? null : query.convType();
         String keyword = query == null ? null : query.keyword();
         Boolean unreadOnly = query == null ? null : query.unreadOnly();
-        List<Map<String, Object>> rows = conversationMapper.selectMyConversations(
-                userId, convType, keyword, unreadOnly, offset, pageSize);
+        // 使用 MyBatis-Plus Page 分页；搜索计数 SQL 不同，禁用自动 count 改用单独查询
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+        page.setSearchCount(false);
+        IPage<Map<String, Object>> result = conversationMapper.selectMyConversations(
+                page, userId, convType, keyword, unreadOnly);
         Long total = conversationMapper.countMyConversations(userId, convType, keyword, unreadOnly);
-        List<ChatVo.ConversationView> records = new ArrayList<>(rows.size());
-        for (Map<String, Object> row : rows) {
+        List<ChatVo.ConversationView> records = new ArrayList<>();
+        for (Map<String, Object> row : result.getRecords()) {
             records.add(toView(row));
         }
         return new PageResult<>(records, total == null ? 0L : total);
