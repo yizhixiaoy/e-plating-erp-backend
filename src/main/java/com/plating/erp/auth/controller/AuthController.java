@@ -421,12 +421,11 @@ public class AuthController {
             refreshTokenService.invalidate(req.refreshToken());
             log.info("用户登出成功, RefreshToken已失效");
         }
-        // 清除通信会话密钥
-        try {
-            var user = SecurityUtils.currentUser();
-            sessionKeyService.remove(user.userId(), user.tenantId());
-        } catch (Exception ignored) {
-        }
+        // 注意：不删除 session key。session key 是跨设备共享的加密密钥，
+        // 单个设备登出不能删除它，否则其他已登录设备会解密失败。
+        // session key 在以下场景才应删除：
+        //   1. 管理员强制下线用户（重置密码）
+        //   2. 用户账号被禁用
         return ApiResponse.ok(new CommonResponses.SuccessResponse(true));
     }
 

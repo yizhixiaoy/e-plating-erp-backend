@@ -6,7 +6,7 @@ spring:
     name: e-plating-erp-backend
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
-    url: ${DB_URL:jdbc:mysql://154.8.225.234:3306/e_plating_erp?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/e_plating_erp?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
     username: ${DB_USERNAME:e-plating}
     password: ${DB_PASSWORD:e-plating}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -23,7 +23,7 @@ spring:
       test-on-return: false
   data:
     redis:
-      host: ${REDIS_HOST:154.8.225.234}
+      host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:6379}
       password: redis2026
   # 邮件服务器配置(默认禁用,通过环境变量启用)
@@ -130,3 +130,4 @@ oss:
     connection-timeout: ${MINIO_CONNECTION_TIMEOUT:30000}
     socket-timeout: ${MINIO_SOCKET_TIMEOUT:30000}
     secure: ${MINIO_SECURE:true}
+

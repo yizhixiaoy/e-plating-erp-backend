@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,6 +19,18 @@ import jakarta.validation.ConstraintViolationException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /**
+     * 处理方法级权限校验失败（@PreAuthorize 不通过）
+     * 返回 403 而不是 500，避免落入兜底 Exception 处理器
+     */
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiResponse<?> handleAuthorizationDenied(AuthorizationDeniedException ex) {
+        log.warn("权限不足, message={}", ex.getMessage());
+        return new ApiResponse<>(ErrorCode.FORBIDDEN.code(), "权限不足", null, 
+                "trace-" + System.currentTimeMillis(), System.currentTimeMillis());
+    }
 
     /**
      * 处理参数校验异常（@Valid注解校验失败）

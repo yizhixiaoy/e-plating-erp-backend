@@ -422,8 +422,8 @@ public class AuthServiceImpl implements AuthService {
         log.info("用户登录成功, userId={}, username={}, tenantId={}, userType={}, entryType={}, roles={}", 
                 user.getId(), user.getUsername(), tenantId, user.getUserType(), entryType, roles);
 
-        // 生成通信会话密钥
-        String sessionKey = sessionKeyService.create(user.getId(), tenantId);
+        // 生成通信会话密钥（复用已有 key，避免多设备登录覆盖导致其他设备解密失败）
+        String sessionKey = sessionKeyService.getOrCreate(user.getId(), tenantId);
 
         return new AuthResponseVo.LoginResponse(
                 accessToken,
@@ -432,6 +432,7 @@ public class AuthServiceImpl implements AuthService {
                 new AuthResponseVo.LoginUserInfo(
                         user.getId(),
                         tenantId,
+                        user.getDeptId(),
                         user.getUsername(),
                         user.getRealName(),
                         user.getAvatarUrl(),

@@ -1,10 +1,15 @@
 package com.plating.erp.common.ai;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.plating.erp.biz.entity.GoodsImageEntity;
+import com.plating.erp.biz.mapper.GoodsImageMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,6 +27,7 @@ import java.util.Map;
 public class AiBridgeController {
 
     private final AiBridgeService aiBridgeService;
+    private final GoodsImageMapper goodsImageMapper;
 
     /**
      * 业务数据查询
@@ -87,5 +93,48 @@ public class AiBridgeController {
     public Map<String, Object> getSchema() {
         log.debug("AI Schema查询请求");
         return aiBridgeService.getAvailableSchema();
+    }
+
+    /**
+     * 获取货物图片特征数据（供AI服务注册特征向量）
+     * <p>
+     * 接收 image_ids 参数，返回指定图片的完整信息。
+     */
+    @PostMapping("/goods-images")
+    public Map<String, Object> getGoodsImages(@RequestBody Map<String, Object> body,
+                                               HttpServletRequest request) {
+        @SuppressWarnings("unchecked")
+        List<Integer> imageIds = (List<Integer>) body.get("image_ids");
+
+        Long tenantId = (Long) request.getAttribute("ai.tenantId");
+
+        if (imageIds == null || imageIds.isEmpty()) {
+            return Map.of("code", 200, "result", List.of());
+        }
+
+        LambdaQueryWrapper<GoodsImageEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(GoodsImageEntity::getId, imageIds)
+               .eq(GoodsImageEntity::getTenantId, tenantId)
+               .eq(GoodsImageEntity::getDeleted, 0)
+               .orderByAsc(GoodsImageEntity::getId);
+        List<GoodsImageEntity> images = goodsImageMapper.selectList(wrapper);
+
+        List<Map<String, Object>> result = images.stream().map(img -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", img.getId());
+            m.put("tenant_id", img.getTenantId());
+            m.put("order_id", img.getOrderId());
+            m.put("item_id", img.getItemId());
+            m.put("node_id", img.getNodeId());
+            m.put("record_id", img.getRecordId());
+            m.put("image_type", img.getImageType());
+            m.put("oss_path", img.getImageUrl());
+            m.put("image_url", img.getImageUrl());
+            m.put("thumbnail_url", img.getThumbnailUrl());
+            m.put("file_size", img.getFileSize());
+            return m;
+        }).toList();
+
+        return Map.of("code", 200, "result", result);
     }
 }

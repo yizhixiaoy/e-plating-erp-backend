@@ -125,13 +125,14 @@ public class AuditLogAspect {
             biz.setUserName(user != null ? user.username() : "system");
             biz.setUserId(user != null ? user.userId() : 0L);
             
-            // 从方法参数中提取旧值
-            Object[] args = pjp.getArgs();
-            if (args != null && args.length > 0) {
-                // 尝试从第一个参数中获取旧值
-                Object firstArg = args[0];
-                if (firstArg != null) {
-                    biz.setOldValue(serializeFieldValue(firstArg, auditLog.fieldName()));
+            // 从方法参数中提取旧值（CREATE 操作无旧值，跳过）
+            if (!"CREATE".equals(auditLog.operateType())) {
+                Object[] args = pjp.getArgs();
+                if (args != null && args.length > 0) {
+                    Object firstArg = args[0];
+                    if (firstArg != null) {
+                        biz.setOldValue(serializeFieldValue(firstArg, auditLog.fieldName()));
+                    }
                 }
             }
             

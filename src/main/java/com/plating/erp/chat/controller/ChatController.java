@@ -65,9 +65,10 @@ public class ChatController {
     }
 
     /** 发送消息 */
+    // 注意：聊天消息（尤其 IMAGE/FILE 类型）的 content 会包含图片/文档数据，
+    // 消息本身已持久化在 chat_message 表，无需再写入审计日志，避免图片文档落入 sys_biz_log / sys_oper_log。
     @PostMapping("/messages")
     @PreAuthorize("isAuthenticated()")
-    @AuditLog(module = "聊天", operateType = "CREATE", bizModule = "chat", fieldName = "content")
     public ApiResponse<ChatMessageEntity> send(@Valid @RequestBody ChatVo.SendReq req) {
         var u = SecurityUtils.currentUser();
         return ApiResponse.ok(chatService.send(req, u.userId(), u.tenantId()));
@@ -92,9 +93,9 @@ public class ChatController {
     }
 
     /** 编辑消息（5 分钟内，仅本人，仅文本） */
+    // 同 send：消息 content 可能包含图片/文档数据，不写入审计日志，避免图片文档落入 sys_biz_log / sys_oper_log。
     @PostMapping("/messages/{id}/edit")
     @PreAuthorize("isAuthenticated()")
-    @AuditLog(module = "聊天", operateType = "UPDATE", bizModule = "chat", fieldName = "content")
     public ApiResponse<ChatMessageEntity> edit(@PathVariable Long id,
                                                @Valid @RequestBody ChatVo.EditReq req) {
         var u = SecurityUtils.currentUser();

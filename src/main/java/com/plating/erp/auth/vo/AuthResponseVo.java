@@ -7,6 +7,7 @@ public class AuthResponseVo {
     public record LoginUserInfo(
             Long userId,
             Long tenantId,
+            Long deptId,
             String username,
             String realName,
             String avatarUrl,

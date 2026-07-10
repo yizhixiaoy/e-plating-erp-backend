@@ -10,6 +10,8 @@ import com.plating.erp.common.api.response.CommonResponses;
 import com.plating.erp.common.api.response.PageResult;
 import com.plating.erp.common.security.SecurityUtils;
 import com.plating.erp.common.util.FileUploadUtils;
+import com.plating.erp.biz.entity.GoodsOrderEntity;
+import com.plating.erp.biz.mapper.GoodsOrderMapper;
 import com.plating.erp.iam.entity.DeptEntity;
 import com.plating.erp.iam.entity.UserEntity;
 import com.plating.erp.iam.mapper.DeptMapper;
@@ -62,6 +64,7 @@ public class MobileController {
     private final EmailRecordMapper emailRecordMapper;
     private final SmsRecordMapper smsRecordMapper;
     private final DictService dictService;
+    private final GoodsOrderMapper goodsOrderMapper;
 
     public MobileController(MessageService messageService,
                             AuthService authService,
@@ -75,7 +78,8 @@ public class MobileController {
                             StringRedisTemplate redisTemplate,
                             EmailRecordMapper emailRecordMapper,
                             SmsRecordMapper smsRecordMapper,
-                            DictService dictService) {
+                            DictService dictService,
+                            GoodsOrderMapper goodsOrderMapper) {
         this.messageService = messageService;
         this.authService = authService;
         this.noticeUserMapper = noticeUserMapper;
@@ -89,6 +93,7 @@ public class MobileController {
         this.emailRecordMapper = emailRecordMapper;
         this.smsRecordMapper = smsRecordMapper;
         this.dictService = dictService;
+        this.goodsOrderMapper = goodsOrderMapper;
     }
 
     // ==================== 消息 ====================
@@ -184,15 +189,21 @@ public class MobileController {
         Long c = noticeUserMapper.countVisibleForUser(user.userId(), 0);
         unread = c == null ? 0 : c;
         pendingTodos = todoService.countPending(user.userId());
-        // 统计今日活跃用户数（当日登录过的用户）
-        long todayLogins = userMapper.selectCount(
-                new LambdaQueryWrapper<UserEntity>()
-                        .ge(UserEntity::getLastLoginAt, LocalDate.now().atStartOfDay()));
+        // 统计今日开单数（当前租户，今天创建的开单）
+        long todayOrders = goodsOrderMapper.selectCount(
+                new LambdaQueryWrapper<GoodsOrderEntity>()
+                        .eq(GoodsOrderEntity::getTenantId, user.tenantId())
+                        .ge(GoodsOrderEntity::getCreatedAt, LocalDate.now().atStartOfDay()));
+        // 统计待处理订单数（当前租户，排除已完成和已取消）
+        long pendingOrders = goodsOrderMapper.selectCount(
+                new LambdaQueryWrapper<GoodsOrderEntity>()
+                        .eq(GoodsOrderEntity::getTenantId, user.tenantId())
+                        .notIn(GoodsOrderEntity::getStatus, List.of("COMPLETED", "CANCELLED")));
         Map<String, Object> resp = new LinkedHashMap<>();
         resp.put("unreadMessages", unread);
         resp.put("pendingTodos", pendingTodos);
-        resp.put("todayLogs", todayLogins);
-        resp.put("onlineUsers", todayLogins);
+        resp.put("todayOrders", todayOrders);
+        resp.put("pendingOrders", pendingOrders);
         return ApiResponse.ok(resp);
     }
 

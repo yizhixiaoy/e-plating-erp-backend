@@ -94,7 +94,7 @@ class AcceptanceStrengtheningIntegrationTests {
 
     @Test
     void tenantIsolation_usesTenantFromToken() throws Exception {
-        String token = jwtTokenService.createToken(10001L, 20001L, "a-admin", List.of("tenant_admin"));
+        String token = jwtTokenService.createToken(10001L, 20001L, "a-admin", List.of("tenant_admin"), 1);
         mockMvc.perform(get("/api/v1/test/tenant")
                         .header("Authorization", "Bearer " + token)
                         .header("X-Tenant-Id", "99999"))
@@ -106,7 +106,7 @@ class AcceptanceStrengtheningIntegrationTests {
     @Test
     void permissionDenied_whenPermMissing() throws Exception {
         when(permissionMapper.selectPerms(anyLong(), anyLong())).thenReturn(List.of());
-        String token = jwtTokenService.createToken(10001L, 20001L, "a-admin", List.of("tenant_admin"));
+        String token = jwtTokenService.createToken(10001L, 20001L, "a-admin", List.of("tenant_admin"), 1);
         mockMvc.perform(get("/api/v1/test/perm")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
@@ -115,7 +115,7 @@ class AcceptanceStrengtheningIntegrationTests {
     @Test
     void auditLog_persistsMaskedParams() throws Exception {
         when(permissionMapper.selectPerms(anyLong(), anyLong())).thenReturn(List.of("audit:write"));
-        String token = jwtTokenService.createToken(10001L, 20001L, "a-admin", List.of("tenant_admin"));
+        String token = jwtTokenService.createToken(10001L, 20001L, "a-admin", List.of("tenant_admin"), 1);
         String body = """
                 {
                   "username": "demo",

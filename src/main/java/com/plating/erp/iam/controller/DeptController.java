@@ -104,7 +104,7 @@ public class DeptController {
      * 获取所有部门（树形/下拉选项用）
      */
     @GetMapping("/options")
-    @PreAuthorize("@authz.hasPerm('user:add') or @authz.hasPerm('user:edit') or @authz.hasPerm('dept:view') or @authz.hasPerm('position:add') or @authz.hasPerm('position:edit') or @authz.hasPerm('message:add')")
+    @PreAuthorize("@authz.hasPerm('user:add') or @authz.hasPerm('user:edit') or @authz.hasPerm('dept:view') or @authz.hasPerm('position:add') or @authz.hasPerm('position:edit') or @authz.hasPerm('message:add') or @authz.hasPerm('goods:order:view') or @authz.hasPerm('goods:order:add') or @authz.hasPerm('goods:order:edit') or @authz.hasPerm('goods:order:submit') or @authz.hasPerm('goods:order:distribute')")
     public ApiResponse<List<DeptOptionsVo>> options(@RequestParam(required = false) Long tenantId) {
         var me = SecurityUtils.currentUser();
         Long queryTenantId = me.isSystem() ? tenantId : me.tenantId();

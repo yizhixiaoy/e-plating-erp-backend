@@ -43,6 +43,11 @@ public class AiBridgeService {
     private static final Set<String> NO_TENANT_COLUMN = Set.of("sys_tenant");
 
     /**
+     * 货物开单相关表不在AI桥接白名单中（通过字典配置动态管理）
+     * 新的货物相关表白名单已在 Flyway V3 迁移脚本的 base_dict_item 中配置
+     */
+
+    /**
      * 聚合函数白名单
      */
     private static final Set<String> AGG_FUNC_WHITELIST = Set.of("count", "sum", "avg", "max", "min");

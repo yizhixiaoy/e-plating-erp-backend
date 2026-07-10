@@ -70,6 +70,15 @@ public class CryptoResponseAdvice implements ResponseBodyAdvice<Object> {
         SecretKeySpec key = getSessionKey();
         if (key == null) return body;
 
+        // 每次加密响应时确保 session key 持久化（移除旧版本可能设置的 TTL）
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getPrincipal() instanceof CurrentUser user) {
+                sessionKeyService.touch(user.userId(), user.tenantId());
+            }
+        } catch (Exception ignored) {
+        }
+
         try {
             // 只处理 ApiResponse 的 data 字段
             if (body instanceof ApiResponse<?> apiResp && apiResp.data() != null) {
