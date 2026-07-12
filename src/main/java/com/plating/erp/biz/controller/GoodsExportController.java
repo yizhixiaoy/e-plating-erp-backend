@@ -29,9 +29,9 @@ public class GoodsExportController {
      */
     @GetMapping("/{orderId}/excel")
     @PreAuthorize("@authz.hasPerm('goods:order:export')")
-    public void exportExcel(@PathVariable Long orderId, HttpServletResponse response) {
+    public void exportExcel(@PathVariable String orderId, HttpServletResponse response) {
         var me = SecurityUtils.currentUser();
-        goodsExportService.exportExcel(orderId, me.tenantId(), response);
+        goodsExportService.exportExcel(Long.valueOf(orderId), me.tenantId(), response);
     }
 
     /**
@@ -39,9 +39,9 @@ public class GoodsExportController {
      */
     @GetMapping("/{orderId}/pdf")
     @PreAuthorize("@authz.hasPerm('goods:order:export')")
-    public void exportPdf(@PathVariable Long orderId, HttpServletResponse response) {
+    public void exportPdf(@PathVariable String orderId, HttpServletResponse response) {
         var me = SecurityUtils.currentUser();
-        goodsExportService.exportPdf(orderId, me.tenantId(), response);
+        goodsExportService.exportPdf(Long.valueOf(orderId), me.tenantId(), response);
     }
 
     /**
@@ -49,8 +49,9 @@ public class GoodsExportController {
      */
     @PostMapping("/batch/excel")
     @PreAuthorize("@authz.hasPerm('goods:order:export')")
-    public void batchExportExcel(@RequestBody List<String> orderNos, HttpServletResponse response) {
+    public void batchExportExcel(@RequestBody List<String> orderIds, HttpServletResponse response) {
         var me = SecurityUtils.currentUser();
-        goodsExportService.batchExportExcel(me.tenantId(), orderNos, response);
+        List<Long> ids = orderIds.stream().map(Long::valueOf).toList();
+        goodsExportService.batchExportExcel(me.tenantId(), ids, response);
     }
 }

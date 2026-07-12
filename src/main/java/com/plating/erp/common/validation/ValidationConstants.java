@@ -4,7 +4,7 @@ package com.plating.erp.common.validation;
  * 统一校验常量
  * 
  * 与前端 validation.ts 和数据库约束保持一致
- * 参考主流应用（微信、支付宝、钉钉）的校验规则
+ *
  */
 public final class ValidationConstants {
     

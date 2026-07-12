@@ -33,8 +33,8 @@ public interface GoodsExportService {
      * 批量导出Excel（按查询条件）
      *
      * @param tenantId 租户ID
-     * @param orderNos 开单编号列表
+     * @param orderIds 开单ID列表
      * @param response HTTP响应
      */
-    void batchExportExcel(Long tenantId, List<String> orderNos, HttpServletResponse response);
+    void batchExportExcel(Long tenantId, List<Long> orderIds, HttpServletResponse response);
 }

@@ -1,5 +1,8 @@
 package com.plating.erp.biz.vo;
 
+import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.write.style.ColumnWidth;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -14,14 +17,40 @@ public class GoodsExportVo {
      * 开单Excel导出DTO
      */
     public static class GoodsOrderExcelDto {
+        @ExcelProperty("开单编号")
+        @ColumnWidth(22)
         private String orderNo;
+
+        @ExcelProperty("开单日期")
+        @ColumnWidth(14)
         private String orderDate;
+
+        @ExcelProperty("客户公司")
+        @ColumnWidth(20)
         private String customerName;
+
+        @ExcelProperty("开单部门")
+        @ColumnWidth(14)
         private String departmentName;
+
+        @ExcelProperty("状态")
+        @ColumnWidth(12)
         private String status;
+
+        @ExcelProperty("货物项数")
+        @ColumnWidth(10)
         private Integer totalItems;
+
+        @ExcelProperty("总数量")
+        @ColumnWidth(12)
         private BigDecimal totalQuantity;
+
+        @ExcelProperty("操作人")
+        @ColumnWidth(12)
         private String operatorName;
+
+        @ExcelProperty("备注")
+        @ColumnWidth(30)
         private String remark;
 
         public GoodsOrderExcelDto() {}
@@ -64,15 +93,44 @@ public class GoodsExportVo {
      * 货物明细Excel导出DTO
      */
     public static class GoodsItemExcelDto {
+        @ExcelProperty("开单编号")
+        @ColumnWidth(22)
         private String orderNo;
+
+        @ExcelProperty("货物名称")
+        @ColumnWidth(20)
         private String itemName;
+
+        @ExcelProperty("数量")
+        @ColumnWidth(10)
         private BigDecimal quantity;
+
+        @ExcelProperty("单位")
+        @ColumnWidth(8)
         private String unit;
+
+        @ExcelProperty("单价")
+        @ColumnWidth(10)
         private BigDecimal unitPrice;
+
+        @ExcelProperty("总价")
+        @ColumnWidth(12)
         private BigDecimal totalPrice;
+
+        @ExcelProperty("规格")
+        @ColumnWidth(14)
         private String specification;
+
+        @ExcelProperty("材质")
+        @ColumnWidth(12)
         private String material;
+
+        @ExcelProperty("照片数")
+        @ColumnWidth(8)
         private String photoCount;
+
+        @ExcelProperty("备注")
+        @ColumnWidth(30)
         private String remark;
 
         public String getOrderNo() { return orderNo; }
@@ -101,16 +159,48 @@ public class GoodsExportVo {
      * 加工记录Excel导出DTO
      */
     public static class ProcessRecordExcelDto {
+        @ExcelProperty("开单编号")
+        @ColumnWidth(22)
         private String orderNo;
+
+        @ExcelProperty("货物名称")
+        @ColumnWidth(20)
         private String itemName;
+
+        @ExcelProperty("加工部门")
+        @ColumnWidth(14)
         private String departmentName;
+
+        @ExcelProperty("工序序号")
+        @ColumnWidth(10)
         private Integer nodeOrder;
+
+        @ExcelProperty("状态")
+        @ColumnWidth(12)
         private String nodeStatus;
+
+        @ExcelProperty("原始数量")
+        @ColumnWidth(12)
         private BigDecimal originalQuantity;
+
+        @ExcelProperty("加工后数量")
+        @ColumnWidth(12)
         private BigDecimal processedQuantity;
+
+        @ExcelProperty("损耗数量")
+        @ColumnWidth(12)
         private BigDecimal lossQuantity;
+
+        @ExcelProperty("操作人")
+        @ColumnWidth(12)
         private String operatorName;
+
+        @ExcelProperty("加工时间")
+        @ColumnWidth(20)
         private String processedAt;
+
+        @ExcelProperty("备注")
+        @ColumnWidth(30)
         private String remark;
 
         public String getOrderNo() { return orderNo; }

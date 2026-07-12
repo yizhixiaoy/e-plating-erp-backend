@@ -63,6 +63,7 @@ public class ChatServiceImpl implements ChatService {
 
     /** 消息类型字典缓存：只加载一次 */
     private volatile Set<String> validMsgTypes;
+    private volatile List<String> orderedMsgTypes;
     private volatile Map<String, String> msgTypeLabelMap;
 
     public ChatServiceImpl(ConversationMapper conversationMapper,
@@ -490,15 +491,16 @@ public class ChatServiceImpl implements ChatService {
 
     // ==================== 消息类型字典查询 ====================
 
-    /** 从字典加载合法消息类型集合（懒加载 + 缓存） */
+    /** 从字典加载合法消息类型集合（懒加载 + 缓存，保持 sort_no 顺序） */
     private Set<String> getValidMsgTypes() {
         if (validMsgTypes == null) {
             synchronized (this) {
                 if (validMsgTypes == null) {
                     List<DictVo.DictDataVo> items = dictService.getDictData(DICT_CHAT_MSG_TYPE);
-                    validMsgTypes = items.stream()
+                    orderedMsgTypes = items.stream()
                             .map(DictVo.DictDataVo::dictValue)
-                            .collect(Collectors.toUnmodifiableSet());
+                            .toList();
+                    validMsgTypes = new java.util.LinkedHashSet<>(orderedMsgTypes);
                 }
             }
         }
@@ -521,9 +523,11 @@ public class ChatServiceImpl implements ChatService {
         return msgTypeLabelMap;
     }
 
-    /** 默认消息类型：字典中第一个（即 sort_no 最小的，通常为 TEXT） */
+    /** 默认消息类型：字典中 sort_no 最小的（即第一个） */
     private String defaultMsgType() {
-        Set<String> types = getValidMsgTypes();
-        return types.stream().findFirst().orElse("TEXT");
+        getValidMsgTypes(); // 确保已加载
+        return orderedMsgTypes != null && !orderedMsgTypes.isEmpty()
+                ? orderedMsgTypes.get(0)
+                : "TEXT";
     }
 }
