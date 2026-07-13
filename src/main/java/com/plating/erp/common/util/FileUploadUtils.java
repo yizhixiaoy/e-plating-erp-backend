@@ -1,6 +1,8 @@
 package com.plating.erp.common.util;
 
+import com.plating.erp.common.store.AliyunOssStorage;
 import com.plating.erp.common.store.OssStorageFactory;
+import com.plating.erp.common.store.OssStorage;
 import com.plating.erp.common.vo.FileUploadVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
@@ -70,6 +72,43 @@ public class FileUploadUtils {
      */
     public static void delete(String ossPath) {
         OssStorageFactory.getStorage().delete(ossPath);
+    }
+
+    /**
+     * 获取文档预览URL（IMM签名URL）
+     *
+     * 支持IMM预览的文件（PDF/Office等）：返回带签名的IMM预览URL（有效期3600秒）
+     * 不支持IMM的文件（图片等）：回退到普通资源URL
+     *
+     * @param ossPath  OSS路径（URL编码）
+     * @param filename 原始文件名（用于判断文件类型和下载时显示）
+     * @return 预览URL
+     */
+    public static String getPreviewUrl(String ossPath, String filename) {
+        if (ossPath == null || ossPath.isEmpty()) return "";
+
+        try {
+            OssStorage storage = OssStorageFactory.getStorage();
+            if (storage instanceof AliyunOssStorage aliyunStorage) {
+                String previewUrl = aliyunStorage.generatePreviewUrl(ossPath);
+                if (previewUrl != null) {
+                    return previewUrl;
+                }
+                // 文件不支持IMM预览，回退到普通资源URL
+            }
+        } catch (Exception e) {
+            log.warn("生成IMM预览URL失败，回退到普通资源URL: {}", e.getMessage());
+        }
+
+        // 回退到普通资源访问URL
+        return getResourceUrl(ossPath, filename, "preview");
+    }
+
+    /**
+     * 获取文档预览URL（默认从ossPath提取文件名）
+     */
+    public static String getPreviewUrl(String ossPath) {
+        return getPreviewUrl(ossPath, null);
     }
 
     /**
