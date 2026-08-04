@@ -30,9 +30,9 @@ import java.util.*;
  */
 class HopByHopHeaders {
     static final Set<String> HEADERS = Set.of(
-        "Transfer-Encoding", "Connection", "Keep-Alive",
-        "Proxy-Authenticate", "Proxy-Authorization",
-        "TE", "Trailer", "Upgrade"
+        "transfer-encoding", "connection", "keep-alive",
+        "proxy-authenticate", "proxy-authorization",
+        "te", "trailer", "upgrade"
     );
 }
 
@@ -181,69 +181,118 @@ public class AiGatewayFilter extends OncePerRequestFilter {
         String query = request.getQueryString();
         URI targetUri = URI.create(aiServiceUrl + path + (query != null ? "?" + query : ""));
 
-        HttpURLConnection conn = null;
-        try {
-            conn = (HttpURLConnection) targetUri.toURL().openConnection();
-            conn.setRequestMethod(request.getMethod());
-            conn.setDoInput(true);
-            conn.setConnectTimeout(30_000);
-            conn.setReadTimeout(300_000); // SSE 长连接读超时 5 分钟
+        // 读取请求体（必须在连接建立前读取，避免流被消费）
+        byte[] body = request.getInputStream().readAllBytes();
 
-            // 拷贝请求头（含认证上下文）
-            for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-                for (String val : entry.getValue()) {
-                    conn.setRequestProperty(entry.getKey(), val);
-                }
-            }
-            String contentType = request.getContentType();
-            if (contentType != null) {
-                conn.setRequestProperty("Content-Type", contentType);
-            }
+        // 重试机制：Connection reset 时自动重试一次
+        int maxRetries = 2;
+        Exception lastException = null;
 
-            // 写入请求体
-            byte[] body = request.getInputStream().readAllBytes();
-            if (body.length > 0) {
-                conn.setDoOutput(true);
-                conn.setFixedLengthStreamingMode(body.length);
-                try (OutputStream os = conn.getOutputStream()) {
-                    os.write(body);
-                    os.flush();
-                }
-            }
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) targetUri.toURL().openConnection();
+                conn.setRequestMethod(request.getMethod());
+                conn.setDoInput(true);
+                // 禁用 keep-alive：避免复用已被对端关闭的连接导致 Connection reset
+                conn.setRequestProperty("Connection", "close");
+                conn.setConnectTimeout(30_000);
+                conn.setReadTimeout(300_000); // SSE 长连接读超时 5 分钟
 
-            // 读取响应状态码
-            int statusCode = conn.getResponseCode();
-            response.setStatus(statusCode);
-
-            // 拷贝非 hop-by-hop 响应头
-            conn.getHeaderFields().forEach((k, v) -> {
-                if (k == null || HopByHopHeaders.HEADERS.contains(k)) return;
-                v.forEach(val -> response.addHeader(k, val));
-            });
-
-            // 流式转发响应体（SSE 场景：chunk 实时透传）
-            try (InputStream is = (statusCode >= 400 ? conn.getErrorStream() : conn.getInputStream());
-                 OutputStream os = response.getOutputStream()) {
-                if (is != null) {
-                    byte[] buf = new byte[8192];
-                    int n;
-                    while ((n = is.read(buf)) != -1) {
-                        os.write(buf, 0, n);
-                        os.flush(); // 关键：每次读完 chunk 立即 flush，确保 SSE 事件实时到达前端
+                // 拷贝请求头（含认证上下文）
+                for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+                    for (String val : entry.getValue()) {
+                        conn.setRequestProperty(entry.getKey(), val);
                     }
                 }
+                String contentType = request.getContentType();
+                if (contentType != null) {
+                    conn.setRequestProperty("Content-Type", contentType);
+                }
+
+                // 写入请求体
+                if (body.length > 0) {
+                    conn.setDoOutput(true);
+                    conn.setFixedLengthStreamingMode(body.length);
+                    try (OutputStream os = conn.getOutputStream()) {
+                        os.write(body);
+                        os.flush();
+                    }
+                }
+
+                // 读取响应状态码
+                int statusCode = conn.getResponseCode();
+                response.setStatus(statusCode);
+
+                // 拷贝非 hop-by-hop 响应头（大小写不敏感匹配，uvicorn 返回的是小写头名）
+                conn.getHeaderFields().forEach((k, v) -> {
+                    if (k == null || HopByHopHeaders.HEADERS.contains(k.toLowerCase())) return;
+                    v.forEach(val -> response.addHeader(k, val));
+                });
+
+                // 流式转发响应体（SSE 场景：chunk 实时透传）
+                try (InputStream is = (statusCode >= 400 ? conn.getErrorStream() : conn.getInputStream());
+                     OutputStream os = response.getOutputStream()) {
+                    if (is != null) {
+                        byte[] buf = new byte[8192];
+                        int n;
+                        try {
+                            while ((n = is.read(buf)) != -1) {
+                                os.write(buf, 0, n);
+                                os.flush(); // 关键：每次读完 chunk 立即 flush，确保 SSE 事件实时到达前端
+                            }
+                        } catch (java.io.EOFException eof) {
+                            // SSE 流正常结束：uvicorn 关闭连接时 HttpURLConnection 可能抛 Premature EOF，
+                            // 此时数据已全部透传给前端，视为正常完成
+                            log.debug("AI代理流式传输结束(EOF): {}", eof.getMessage());
+                        }
+                    }
+                }
+                return; // 成功，直接返回
+            } catch (java.net.SocketException e) {
+                // 响应已提交（已开始流式输出）：客户端中途断开，重试无意义，直接结束
+                if (response.isCommitted()) {
+                    log.warn("AI代理流式输出中断，客户端已断开({})", e.getMessage());
+                    if (conn != null) conn.disconnect();
+                    return;
+                }
+                // 连接建立阶段失败 → 重试
+                lastException = e;
+                log.warn("AI服务代理第{}次尝试失败({})，{}", attempt, e.getMessage(),
+                    attempt < maxRetries ? "将重试" : "已耗尽重试");
+                if (conn != null) conn.disconnect();
+                if (attempt < maxRetries) {
+                    try { Thread.sleep(200); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                }
+            } catch (java.io.EOFException eof) {
+                // 如果在 getResponseCode() 阶段就 EOF，说明连接已断 → 重试
+                if (response.isCommitted()) {
+                    log.debug("AI代理响应已完成(EOF)");
+                    return;
+                }
+                lastException = eof;
+                log.warn("AI服务代理第{}次尝试Premature EOF，{}", attempt,
+                    attempt < maxRetries ? "将重试" : "已耗尽重试");
+                if (conn != null) conn.disconnect();
+                if (attempt < maxRetries) {
+                    try { Thread.sleep(200); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                }
+            } catch (Exception e) {
+                lastException = e;
+                log.error("AI服务代理转发失败: {}", e.getMessage());
+                if (conn != null) conn.disconnect();
+                break; // 非网络异常，不重试
             }
-        } catch (Exception e) {
-            log.error("AI服务代理转发失败: {}", e.getMessage());
-            // 避免重复写入响应（可能已开始流式输出）
-            if (!response.isCommitted()) {
-                response.reset();
-                response.setStatus(502);
-                response.setContentType("application/json;charset=UTF-8");
-                response.getWriter().write("{\"code\":502,\"message\":\"AI服务暂时不可用\"}");
-            }
-        } finally {
-            if (conn != null) conn.disconnect();
+        }
+
+        // 所有重试均失败
+        log.error("AI服务代理转发最终失败(重试{}次): {}", maxRetries, 
+            lastException != null ? lastException.getMessage() : "unknown");
+        if (!response.isCommitted()) {
+            response.reset();
+            response.setStatus(502);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":502,\"message\":\"AI服务暂时不可用\"}");
         }
     }
 }
