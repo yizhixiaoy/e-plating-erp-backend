@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.plating.erp.chat.mapper.ChatMessageMapper">
+
+    <!--
+        历史消息分页（按 id 倒序，由 Service 反转为正序）
+        - 联表 sys_user 取发送者昵称/头像
+        - 联表 chat_message rm + sys_user ru 取被引用消息的实时发送者名称兜底（reply_sender_name 字段为空时使用）
+    -->
+    <select id="selectMessagesPage" resultType="java.util.LinkedHashMap">
+        SELECT
+            m.id,
+            m.tenant_id        AS tenantId,
+            m.conversation_id  AS conversationId,
+            m.sender_id        AS senderId,
+            m.msg_type         AS msgType,
+            m.content,
+            m.extra_json       AS extraJson,
+            m.recalled,
+            m.recalled_at      AS recalledAt,
+            m.edited,
+            m.edited_at        AS editedAt,
+            m.reply_to_id      AS replyToId,
+            m.reply_preview    AS replyPreview,
+            COALESCE(m.reply_sender_name, ru.real_name, ru.username) AS replySenderName,
+            m.created_at       AS createdAt,
+            COALESCE(u.real_name, u.username) AS senderName,
+            u.avatar_url       AS senderAvatar
+        FROM chat_message m
+        LEFT JOIN sys_user u
+            ON u.id = m.sender_id
+        LEFT JOIN chat_message rm
+            ON rm.id = m.reply_to_id
+            AND IFNULL(rm.deleted, 0) = 0
+        LEFT JOIN sys_user ru
+            ON ru.id = rm.sender_id
+        WHERE m.conversation_id = #{conversationId}
+          AND IFNULL(m.deleted, 0) = 0
+        <if test="beforeId != null">
+            AND m.id &lt; #{beforeId}
+        </if>
+        ORDER BY m.id DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.plating.erp.chat.mapper.ConversationMapper">
+
+    <!-- 我的会话视图（含 peer + last_message 预览）共享列 -->
+    <sql id="myConversationColumns">
+        c.id,
+        c.tenant_id        AS tenantId,
+        c.conv_type        AS convType,
+        c.name,
+        c.avatar,
+        c.owner_id         AS ownerId,
+        c.last_message_id  AS lastMessageId,
+        c.last_message_at  AS lastMessageAt,
+        c.member_count     AS memberCount,
+        c.created_at       AS createdAt,
+        m.id               AS memberId,
+        m.pinned,
+        m.muted,
+        m.unread_count     AS unreadCount,
+        m.last_read_id     AS lastReadId,
+        m.role             AS memberRole,
+        m.nickname         AS memberNickname,
+        pu.id              AS peerUserId,
+        COALESCE(pu.real_name, pu.username) AS peerName,
+        pu.avatar_url      AS peerAvatar,
+        lm.msg_type        AS lastMessageType,
+        lm.content         AS lastMessageContent,
+        lm.sender_id       AS lastMessageSenderId,
+        COALESCE(lu.real_name, lu.username) AS lastMessageSenderName,
+        lm.recalled        AS lastMessageRecalled
+    </sql>
+
+    <!-- 我的会话查询连接（含成员关系 + peer + last_message 预览） -->
+    <sql id="myConversationJoins">
+        FROM chat_conversation c
+        INNER JOIN chat_conversation_member m
+            ON m.conversation_id = c.id
+            AND m.user_id = #{userId}
+        LEFT JOIN chat_conversation_member pm
+            ON pm.conversation_id = c.id
+            AND pm.user_id &lt;&gt; #{userId}
+            AND c.conv_type = 'SINGLE'
+            AND IFNULL(pm.deleted, 0) = 0
+        LEFT JOIN sys_user pu
+            ON pu.id = pm.user_id
+        LEFT JOIN chat_message lm
+            ON lm.id = c.last_message_id
+            AND IFNULL(lm.deleted, 0) = 0
+        LEFT JOIN sys_user lu
+            ON lu.id = lm.sender_id
+    </sql>
+
+    <!-- 我的会话列表（按 last_message_at 降序，置顶优先） -->
+    <select id="selectMyConversations" resultType="java.util.LinkedHashMap">
+        SELECT
+        <include refid="myConversationColumns"/>
+        <include refid="myConversationJoins"/>
+        WHERE IFNULL(m.deleted, 0) = 0
+          AND m.quit_at IS NULL
+          AND IFNULL(c.deleted, 0) = 0
+        <if test="convType != null and convType != ''">
+            AND c.conv_type = #{convType}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                c.name LIKE CONCAT('%', #{keyword}, '%')
+                OR pu.real_name LIKE CONCAT('%', #{keyword}, '%')
+                OR pu.username LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        <if test="unreadOnly != null and unreadOnly == true">
+            AND m.unread_count &gt; 0
+        </if>
+        ORDER BY m.pinned DESC, c.last_message_at DESC, c.id DESC
+    </select>
+
+    <!-- 我的会话总数 -->
+    <select id="countMyConversations" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM chat_conversation c
+        INNER JOIN chat_conversation_member m
+            ON m.conversation_id = c.id
+        WHERE m.user_id = #{userId}
+          AND IFNULL(m.deleted, 0) = 0
+          AND m.quit_at IS NULL
+          AND IFNULL(c.deleted, 0) = 0
+        <if test="convType != null and convType != ''">
+            AND c.conv_type = #{convType}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND c.name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        <if test="unreadOnly != null and unreadOnly == true">
+            AND m.unread_count &gt; 0
+        </if>
+    </select>
+
+    <!-- 单条会话视图（含 peer + last_message） -->
+    <select id="selectMyConversationOne" resultType="java.util.LinkedHashMap">
+        SELECT
+        <include refid="myConversationColumns"/>
+        <include refid="myConversationJoins"/>
+        WHERE c.id = #{conversationId}
+          AND IFNULL(m.deleted, 0) = 0
+          AND m.quit_at IS NULL
+          AND IFNULL(c.deleted, 0) = 0
+        LIMIT 1
+    </select>
+
+</mapper>

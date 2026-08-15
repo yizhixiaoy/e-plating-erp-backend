@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.plating.erp.iam.mapper.UserMapper">
+
+    <!-- 分页查询用户（支持租户名称和部门名称模糊查询） -->
+    <select id="selectPageWithTenantName" resultType="com.plating.erp.iam.entity.UserEntity">
+        SELECT u.*, t.tenant_name as tenantName, t.short_code as shortName FROM sys_user u
+        LEFT JOIN sys_tenant t ON u.tenant_id = t.id
+        LEFT JOIN sys_dept d ON u.dept_id = d.id
+        WHERE u.deleted = 0
+        <if test="tenantId != null">
+            AND u.tenant_id = #{tenantId}
+        </if>
+        <if test="deptId != null">
+            AND u.dept_id = #{deptId}
+        </if>
+        <if test="status != null">
+            AND u.status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                u.real_name LIKE CONCAT('%', #{keyword}, '%')
+                OR u.username LIKE CONCAT('%', #{keyword}, '%')
+                OR u.phone LIKE CONCAT('%', #{keyword}, '%')
+                OR t.tenant_name LIKE CONCAT('%', #{keyword}, '%')
+                or t.short_code LIKE CONCAT('%', #{keyword}, '%')
+                OR d.dept_name LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        ORDER BY u.updated_at DESC
+    </select>
+
+    <!-- 按部门统计在职用户数 -->
+    <select id="countByDept" resultType="java.util.Map">
+        SELECT dept_id AS deptId, COUNT(*) AS cnt
+        FROM sys_user
+        WHERE tenant_id = #{tenantId}
+          AND status = 0
+          AND deleted = 0
+          AND dept_id IS NOT NULL
+        GROUP BY dept_id
+    </select>
+
+</mapper>

@@ -1,0 +1,29 @@
+package com.plating.erp.message.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+@TableName("msg_email_record")
+public class EmailRecordEntity {
+    @TableId(type = IdType.ASSIGN_ID)
+    private Long id;
+    private Long tenantId;
+    private Long receiverUserId;
+    private Long noticeId;
+    private String senderEmail;
+    private String receiverEmail;
+    private String subject;
+    private String content;
+    private Integer sendStatus;
+    private String failReason;
+    private Integer retryCount;
+    private Long operatorId;
+    private LocalDateTime sentTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}

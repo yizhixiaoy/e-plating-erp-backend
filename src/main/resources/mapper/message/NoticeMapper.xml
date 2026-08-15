@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.plating.erp.message.mapper.NoticeMapper">
+    
+    <!-- 查询所有租户的待发布公告（跳过租户拦截器） -->
+    <select id="selectDueNoticesIgnoreTenant" resultType="com.plating.erp.message.entity.NoticeEntity">
+        SELECT * FROM msg_notice
+        WHERE status = 1
+          AND scheduled_publish_at IS NOT NULL
+          AND scheduled_publish_at &lt;= NOW()
+          AND deleted = 0
+    </select>
+    
+</mapper>
